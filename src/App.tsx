@@ -10,6 +10,9 @@ type UserRole = 'guest' | 'student' | 'teacher' | 'teacher-dashboard' | 'student
 function App() {
   const [currentRole, setCurrentRole] = useState<UserRole>('guest');
   const [activeProjectId, setActiveProjectId] = useState<string | undefined>();
+  // Controla se a IDE está em modo somente-leitura (professor inspecionando projeto de aluno)
+  // vs. modo completo (professor ou aluno editando projeto próprio)
+  const [isViewOnly, setIsViewOnly] = useState(false);
 
   const handleLogin = (role: 'student' | 'teacher' | 'visitor') => {
     if (role === 'teacher') setCurrentRole('teacher-dashboard');
@@ -20,11 +23,12 @@ function App() {
   const handleLogout = () => {
     setCurrentRole('guest');
     setActiveProjectId(undefined);
+    setIsViewOnly(false);
   };
 
-  // Corrigido: limpa o projectId antes de voltar
   const handleBackToDashboard = () => {
     setActiveProjectId(undefined);
+    setIsViewOnly(false);
     if (currentRole === 'teacher') setCurrentRole('teacher-dashboard');
     else if (currentRole === 'student') setCurrentRole('student-dashboard');
     else handleLogout();
@@ -36,8 +40,16 @@ function App() {
     return (
       <TeacherDashboard
         onLogout={handleLogout}
-        onOpenIde={(projectId) => {
+        // Projeto próprio do professor: IDE completa, pode salvar
+        onOpenOwnProject={(projectId) => {
           setActiveProjectId(projectId);
+          setIsViewOnly(false);
+          setCurrentRole('teacher');
+        }}
+        // Projeto de aluno: IDE somente-leitura
+        onInspectStudentProject={(projectId) => {
+          setActiveProjectId(projectId);
+          setIsViewOnly(true);
           setCurrentRole('teacher');
         }}
       />
@@ -50,6 +62,7 @@ function App() {
         onLogout={handleLogout}
         onOpenIde={(projectId) => {
           setActiveProjectId(projectId);
+          setIsViewOnly(false);
           setCurrentRole('student');
         }}
       />
@@ -59,6 +72,7 @@ function App() {
   return (
     <IdeScreen
       role={currentRole}
+      readOnly={isViewOnly}
       onBack={handleBackToDashboard}
       projectId={activeProjectId}
     />

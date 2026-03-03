@@ -19,12 +19,13 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
   const [showModal, setShowModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [projectToDelete, setProjectToDelete] = useState<Projeto | null>(null);
+  const [createError, setCreateError] = useState('');
 
   const fetchProjects = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // MIGRADO: tabela `projetos`, coluna `dono_id`, coluna `nome`
+    // Nunca selecionar workspace_data na listagem — campo pesado, só carregado na IDE
     const { data } = await supabase
       .from('projetos')
       .select('id, nome, updated_at')
@@ -39,10 +40,11 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) return;
+    setCreateError('');
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Busca a turma do aluno para preencher turma_id (obrigatório na tabela nova)
     const { data: perfil } = await supabase
       .from('perfis')
       .select('turma_id')
@@ -50,11 +52,11 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
       .single();
 
     if (!perfil?.turma_id) {
-      alert('Erro: seu perfil não está vinculado a uma turma. Fale com o professor.');
+      setCreateError('Seu perfil não está vinculado a uma turma. Fale com o professor.');
       return;
     }
 
-    // MIGRADO: tabela `projetos`, campos `dono_id`, `nome`, `turma_id`
+    // Retorna só os campos da lista — workspace_data nasce nulo, não precisa voltar
     const { data, error } = await supabase
       .from('projetos')
       .insert([{
@@ -63,19 +65,20 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
         nome: newProjectName.trim(),
         target_board: 'uno',
       }])
-      .select()
+      .select('id, nome, updated_at')
       .single();
 
     if (!error && data) {
       setProjects(prev => [data, ...prev]);
       setShowModal(false);
       setNewProjectName('');
+    } else if (error) {
+      setCreateError(error.message);
     }
   };
 
   const confirmDeleteProject = async () => {
     if (!projectToDelete) return;
-    // MIGRADO: tabela `projetos`
     await supabase.from('projetos').delete().eq('id', projectToDelete.id);
     setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
     setProjectToDelete(null);
@@ -95,7 +98,7 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
       {/* BOTÃO NOVO PROJETO */}
       <div style={{ marginBottom: '20px' }}>
         <button className="btn-primary" style={{ padding: '12px 25px', fontSize: '1.1rem' }} onClick={() => setShowModal(true)}>
-          ➕ Novo Projeto
+          + Novo Projeto
         </button>
       </div>
 
@@ -112,12 +115,17 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
               {projects.map((proj) => (
                 <div key={proj.id} style={{ backgroundColor: 'white', padding: '25px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', borderTop: '5px solid #4cd137', display: 'flex', flexDirection: 'column' }}>
-                  {/* MIGRADO: proj.nome em vez de proj.name */}
                   <h3 style={{ color: '#2c3e50', marginBottom: '10px', fontSize: '1.4rem' }}>{proj.nome}</h3>
-                  <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>Salvo em: {new Date(proj.updated_at).toLocaleDateString()}</p>
+                  <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
+                    Salvo em: {new Date(proj.updated_at).toLocaleDateString()}
+                  </p>
                   <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-                    <button className="btn-secondary" style={{ flex: 1, padding: '10px' }} onClick={() => onOpenIde(proj.id)}>Abrir Código</button>
-                    <button className="btn-outline" style={{ padding: '10px 15px' }} onClick={() => setProjectToDelete(proj)}>🗑️</button>
+                    <button className="btn-secondary" style={{ flex: 1, padding: '10px' }} onClick={() => onOpenIde(proj.id)}>
+                      Abrir Código
+                    </button>
+                    <button className="btn-outline" style={{ padding: '10px 15px' }} onClick={() => setProjectToDelete(proj)}>
+                      Excluir
+                    </button>
                   </div>
                 </div>
               ))}
@@ -131,9 +139,19 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <h2 style={{ color: '#2c3e50', marginBottom: '10px' }}>Novo Projeto</h2>
             <p style={{ color: '#7f8c8d', marginBottom: '20px' }}>Dê um nome bem legal para a sua invenção:</p>
-            <input type="text" placeholder="Ex: Robô Dançarino" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #e0e6ed', fontSize: '1.1rem', marginBottom: '20px' }} />
+            <input
+              type="text"
+              placeholder="Ex: Robô Dançarino"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
+              style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #e0e6ed', fontSize: '1.1rem', marginBottom: '12px' }}
+            />
+            {createError && (
+              <p style={{ color: '#e53e3e', fontSize: '0.9rem', marginBottom: '12px' }}>{createError}</p>
+            )}
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn-outline" style={{ flex: 1 }} onClick={() => { setShowModal(false); setNewProjectName(''); }}>Cancelar</button>
+              <button className="btn-outline" style={{ flex: 1 }} onClick={() => { setShowModal(false); setNewProjectName(''); setCreateError(''); }}>Cancelar</button>
               <button className="btn-primary" style={{ flex: 1 }} onClick={handleCreateProject}>Criar!</button>
             </div>
           </div>
@@ -144,10 +162,10 @@ export function StudentDashboard({ onLogout, onOpenIde }: StudentDashboardProps)
       {projectToDelete && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200 }}>
           <div style={{ backgroundColor: 'white', padding: '35px', borderRadius: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
-            <div style={{ fontSize: '3.5rem', marginBottom: '10px' }}>🗑️</div>
             <h2 style={{ color: '#2c3e50', marginBottom: '10px' }}>Atenção!</h2>
-            {/* MIGRADO: projectToDelete.nome */}
-            <p style={{ color: '#7f8c8d', marginBottom: '25px', fontSize: '1.1rem' }}>Tem certeza que deseja apagar o projeto <b>{projectToDelete.nome}</b>? Isso não pode ser desfeito!</p>
+            <p style={{ color: '#7f8c8d', marginBottom: '25px', fontSize: '1.1rem' }}>
+              Tem certeza que deseja apagar o projeto <b>{projectToDelete.nome}</b>? Isso não pode ser desfeito.
+            </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="btn-outline" style={{ flex: 1, padding: '12px' }} onClick={() => setProjectToDelete(null)}>Cancelar</button>
               <button className="btn-primary" style={{ flex: 1, padding: '12px', backgroundColor: '#ff4757', boxShadow: '0 6px 0px #ff1e34' }} onClick={confirmDeleteProject}>Sim, Apagar</button>
