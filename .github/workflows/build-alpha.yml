@@ -1,4 +1,4 @@
-name: Build Alpha Windows
+name: Build Alpha
 
 on:
   push:
@@ -6,6 +6,9 @@ on:
       - alpha-v1
 
 jobs:
+  # ──────────────────────────────────────────────────────────────────────────────
+  # BUILD WINDOWS (.exe via NSIS)
+  # ──────────────────────────────────────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
 
@@ -23,17 +26,87 @@ jobs:
       - name: Instalar dependências npm
         run: npm install
 
-      - name: Baixar arduino-cli
+      - name: Baixar arduino-cli (Windows)
         run: |
-          Invoke-WebRequest -Uri "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip" -OutFile arduino-cli.zip
-          Expand-Archive arduino-cli.zip -DestinationPath src-tauri/resources/
+          New-Item -ItemType Directory -Force -Path src-tauri/resources/
+          # Remove arquivo anterior se existir — Expand-Archive -Force falha em arquivos, não em dirs
+          if (Test-Path src-tauri/resources/arduino-cli.exe) {
+            Remove-Item -Force src-tauri/resources/arduino-cli.exe
+          }
+          Invoke-WebRequest `
+            -Uri "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip" `
+            -OutFile arduino-cli.zip
+          Expand-Archive arduino-cli.zip -DestinationPath src-tauri/resources/ -Force
+          Remove-Item arduino-cli.zip
         shell: powershell
 
-      - name: Build Tauri
+      - name: Build Tauri (Windows)
         run: npm run tauri build
 
-      - name: Upload instalador
+      - name: Upload instalador Windows
         uses: actions/upload-artifact@v4
         with:
           name: OficinaCode-alpha-v1-windows
           path: src-tauri/target/release/bundle/nsis/*.exe
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # BUILD LINUX (.deb + AppImage — para ChromeOS/Crostini e outros Linux)
+  # ──────────────────────────────────────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Dependências de sistema necessárias para o Tauri no Linux
+      - name: Instalar dependências do sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libudev-dev \
+            pkg-config
+
+      - name: Instalar dependências npm
+        run: npm install
+
+      - name: Baixar arduino-cli (Linux x86_64)
+        run: |
+          mkdir -p src-tauri/resources/
+          curl -L \
+            "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz" \
+            -o arduino-cli.tar.gz
+          tar -xzf arduino-cli.tar.gz -C src-tauri/resources/
+          chmod +x src-tauri/resources/arduino-cli
+          rm arduino-cli.tar.gz
+
+      - name: Build Tauri (Linux)
+        run: npm run tauri build
+
+      - name: Upload pacote .deb (Chromebook / Debian)
+        uses: actions/upload-artifact@v4
+        with:
+          name: OficinaCode-alpha-v1-linux-deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+
+      - name: Upload AppImage (Linux universal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: OficinaCode-alpha-v1-linux-appimage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
