@@ -5,28 +5,15 @@ use std::process::Command;
 use std::env;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tauri::{Emitter, Manager}; // <-- Manager adicionado aqui
+use tauri::Emitter; 
 use std::time::Duration;
 
 struct AppState {
     is_reading_serial: Arc<AtomicBool>,
 }
 
-fn arduino_cli_path(app_handle: &tauri::AppHandle) -> std::path::PathBuf {
-    app_handle
-        .path()
-        .resolve("arduino-cli.exe", tauri::path::BaseDirectory::Resource)
-        .expect("Não foi possível resolver o caminho do arduino-cli")
-}
-
 #[tauri::command]
-fn upload_code(
-    codigo: String, 
-    placa: String, 
-    porta: String, 
-    state: tauri::State<AppState>,
-    app_handle: tauri::AppHandle, // <-- app_handle injetado aqui
-) -> Result<String, String> {
+fn upload_code(codigo: String, placa: String, porta: String, state: tauri::State<AppState>) -> Result<String, String> {
     println!(">>> [1] Iniciando processo de envio...");
     println!(">>> [2] Desligando o monitor serial (liberando a porta)...");
     state.is_reading_serial.store(false, Ordering::Relaxed);
@@ -38,9 +25,6 @@ fn upload_code(
         "esp32" => "esp32:esp32:esp32",
         _ => "arduino:avr:uno",
     };
-    
-    // <-- Pega o caminho absoluto do executável
-    let cli = arduino_cli_path(&app_handle);
     
     let temp_dir = env::temp_dir();
     let sketch_dir = temp_dir.join("oficina_code_sketch");
@@ -55,8 +39,7 @@ fn upload_code(
     }
 
     println!(">>> [6] Compilando...");
-    // <-- Command::new agora usa a variável `cli` em vez de "arduino-cli"
-    let compile_output = match Command::new(&cli).arg("compile").arg("-b").arg(fqbn).arg(&sketch_dir).output() { 
+    let compile_output = match Command::new("arduino-cli").arg("compile").arg("-b").arg(fqbn).arg(&sketch_dir).output() { 
         Ok(out) => out, 
         Err(e) => return Err(format!("Erro compilador: {}", e)) 
     };
@@ -67,8 +50,7 @@ fn upload_code(
     }
     
     println!(">>> [8] Enviando para a porta {}...", porta);
-    // <-- Command::new agora usa a variável `cli`
-    let upload_output = match Command::new(&cli).arg("upload").arg("-b").arg(fqbn).arg("-p").arg(&porta).arg(&sketch_dir).output() { 
+    let upload_output = match Command::new("arduino-cli").arg("upload").arg("-b").arg(fqbn).arg("-p").arg(&porta).arg(&sketch_dir).output() { 
         Ok(out) => out, 
         Err(e) => return Err(format!("Erro upload: {}", e)) 
     };
