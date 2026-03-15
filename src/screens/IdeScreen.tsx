@@ -510,11 +510,11 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         </div>
       )}
 
-      {/* ── TOPBAR ───────────────────────────────────────────────────────── */}
-      <div className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '15px' }}>
+  {/* ── TOPBAR ───────────────────────────────────────────────────────── */}
+      <div className="topbar">
 
-        {/* Logo + título */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 'fit-content' }}>
+        {/* Esquerda: logo + badge */}
+        <div className="topbar-left">
           <img src={logoSimples} alt="Oficina Code" style={{ height: '34px' }} />
           {projectTitle && (
             <div className="project-title-badge">
@@ -524,47 +524,49 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
           )}
         </div>
 
-        {/* Controles de hardware (centro) */}
-        <div className="hardware-controls" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-          <div className="control-group">
-            <span className="control-icon">🖥️</span>
-            <select value={board} onChange={(e) => setBoard(e.target.value as 'nano' | 'esp32' | 'uno')} disabled={readOnly}>
-              <option value="uno">Uno</option>
-              <option value="nano">Nano</option>
-              <option value="esp32">ESP32</option>
-            </select>
-          </div>
-          <div className="control-divider" />
-          <div className="control-group">
-            <span className="control-icon">🔌</span>
-            <select value={port} onChange={(e) => setPort(e.target.value)}>
-              {availablePorts.length === 0
-                ? <option value="">Conecte o cabo…</option>
-                : availablePorts.map(p => <option key={p} value={p}>{p}</option>)
-              }
-            </select>
-            <button onClick={fetchPorts} className="btn-icon" title="Atualizar portas">🔄</button>
-          </div>
-          <div className="control-divider" />
-          {!readOnly && (
-            <>
-              <button onClick={handleUploadCode} className="btn-action btn-send" disabled={isUploadingRef.current}>
-                🚀 Enviar
-              </button>
+        {/* Centro: controles de hardware */}
+        <div className="topbar-center">
+          <div className="hardware-controls">
+            <div className="control-group">
+              <span className="control-icon">🖥️</span>
+              <select value={board} onChange={(e) => setBoard(e.target.value as 'nano' | 'esp32' | 'uno')} disabled={readOnly}>
+                <option value="uno">Uno</option>
+                <option value="nano">Nano</option>
+                <option value="esp32">ESP32</option>
+              </select>
+            </div>
+            <div className="control-divider" />
+            <div className="control-group">
+              <span className="control-icon">🔌</span>
+              <select value={port} onChange={(e) => setPort(e.target.value)}>
+                {availablePorts.length === 0
+                  ? <option value="">Conecte o cabo…</option>
+                  : availablePorts.map(p => <option key={p} value={p}>{p}</option>)
+                }
+              </select>
+              <button onClick={fetchPorts} className="btn-icon" title="Atualizar portas">🔄</button>
+            </div>
+            <div className="control-divider" />
+            {!readOnly && (
+              <>
+                <button onClick={handleUploadCode} className="btn-action btn-send" disabled={isUploadingRef.current}>
+                  🚀 Enviar
+                </button>
+                <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>
+                  {isSerialOpen ? '🛑 Parar' : '💬 Chat'}
+                </button>
+              </>
+            )}
+            {readOnly && (
               <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>
-                {isSerialOpen ? '🛑 Parar' : '💬 Chat'}
+                {isSerialOpen ? '🛑 Parar' : '💬 Monitorar'}
               </button>
-            </>
-          )}
-          {readOnly && (
-            <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>
-              {isSerialOpen ? '🛑 Parar' : '💬 Monitorar'}
-            </button>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Botões da direita */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        {/* Direita: botões de ação */}
+        <div className="topbar-right">
           {role !== 'student' && (
             <button className="btn-secondary topbar-btn" onClick={() => setIsCodeVisible(!isCodeVisible)}>
               {isCodeVisible ? '🙈 Ocultar Código' : '💻 Ver Código'}
@@ -575,7 +577,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
               {isSaving ? '⏳ Salvando…' : '💾 Salvar'}
             </button>
           )}
-          <button className="btn-danger topbar-btn" onClick={onBack}>← Sair</button>
+          <button className="btn-danger topbar-btn" onClick={onBack}>↩️ Sair</button>
         </div>
       </div>
 

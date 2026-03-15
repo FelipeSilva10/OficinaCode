@@ -98,7 +98,7 @@ body, html, #root {
 .login-container {
   display: flex; justify-content: center; align-items: center;
   height: 100vh; position: relative; z-index: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 40%, #00a8ff 100%);
+  background: linear-gradient(105deg, #667eea 12%, #764ba2 40%, #00a8ff 100%);
 }
 
 .login-container::before {
@@ -109,7 +109,7 @@ body, html, #root {
 
 .login-card {
   background: var(--white);
-  padding: 50px 40px;
+  padding: 50px 80px;
   border-radius: 32px;
   width: 90%; max-width: 420px;
   text-align: center;
@@ -121,7 +121,7 @@ body, html, #root {
 
 .login-card::before {
   content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  position: absolute; top: 0; left: 0; right: 0; height: 15px;
   background: linear-gradient(90deg, var(--primary), var(--secondary), #ef9f4b, var(--danger));
 }
 
@@ -185,10 +185,14 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
 .topbar {
   height: 60px; background-color: var(--white);
   display: flex; align-items: center; padding: 0 15px;
-  border-bottom: 2px solid var(--border); gap: 15px;
+  border-bottom: 2px solid var(--border); gap: 10px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.04); z-index: 10;
 }
 .topbar h2 { color: var(--dark); font-weight: 900; letter-spacing: -0.5px; font-size: 1.2rem; }
+
+.topbar-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.topbar-center { flex: 1; display: flex; justify-content: center; align-items: center; min-width: 0; overflow: hidden; }
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 /* Badge do título do projeto */
 .project-title-badge {
@@ -207,13 +211,11 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
 /* ── Controles de hardware ── */
 .hardware-controls {
   display: flex; align-items: center; background-color: var(--white);
-  border: 2px solid var(--border); border-radius: 100px;
-  padding: 4px 6px; gap: 4px;
-  box-shadow: 0 4px 0px rgba(224, 230, 237, 0.8);
+  padding: 6px 4px; gap: 5px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 .control-group {
   display: flex; align-items: center; background-color: var(--surface);
-  border-radius: 100px; padding: 4px 12px 4px 10px; gap: 5px;
+  border-radius: 70px; padding: 4px 12px 4px 10px; gap: 5px;
 }
 .control-icon { font-size: 1.1rem; }
 .hardware-controls select {
