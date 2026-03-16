@@ -181,18 +181,100 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
 }
 .readonly-banner span:first-child { font-size: 1rem; }
 
-/* ── Topbar ── */
+/* ── Topbar (Flexbox responsivo) ── */
+/* ── Topbar (Altura travada no Desktop) ── */
 .topbar {
-  height: 60px; background-color: var(--white);
-  display: flex; align-items: center; padding: 0 15px;
-  border-bottom: 2px solid var(--border); gap: 10px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.04); z-index: 10;
+  height: 60px; /* Trava em exatos 60px */
+  padding: 0 15px; /* Removemos o padding vertical para secar a barra */
+  background-color: var(--white);
+  display: flex;
+  justify-content: space-between; /* Distribui os 3 blocos sem amassar */
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap; /* Proíbe a quebra de linha em telas grandes */
+  border-bottom: 2px solid var(--border);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+  z-index: 10;
 }
-.topbar h2 { color: var(--dark); font-weight: 900; letter-spacing: -0.5px; font-size: 1.2rem; }
 
-.topbar-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.topbar-center { flex: 1; display: flex; justify-content: center; align-items: center; min-width: 0; overflow: hidden; }
-.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1; 
+  min-width: 200px; /* Garante que a logo/título tenham espaço de respiro */
+}
+
+.topbar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: max-content; /* Impede que os botões da direita amassem antes da quebra de linha */
+}
+/* Botões da topbar: emoji + label lado a lado */
+
+.topbar-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px !important;
+  font-size: 0.88rem !important;
+  border-radius: 10px !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-emoji {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Tela pequena (Tablets/Laptops menores): Libera altura e joga o centro para baixo */
+@media (max-width: 850px) {
+  .topbar { 
+    height: auto; /* Libera a barra para crescer */
+    min-height: 60px;
+    padding: 10px 15px; /* Devolve o respiro vertical só no mobile */
+    flex-wrap: wrap; /* Permite que os controles desçam de linha */
+  }
+  
+  .topbar-center {
+    order: 3;
+    flex: 1 1 100%;
+    margin-top: 5px;
+  }
+  
+  .topbar-left { flex: 1; }
+  .topbar-right { flex: 1; justify-content: flex-end; }
+}
+/* Tela pequena (Tablets/Laptops menores): Joga o centro para baixo */
+@media (max-width: 850px) {
+  .topbar { padding: 8px 10px; }
+  
+  .topbar-center {
+    order: 3; /* Move para o final (abaixo) */
+    flex: 1 1 100%; /* Força a ocupar 100% da linha inteira */
+    margin-top: 5px;
+  }
+  
+  .topbar-left { flex: 1; }
+  .topbar-right { flex: 1; justify-content: flex-end; }
+  
+  .topbar-btn {
+    padding: 7px 8px !important;
+    font-size: 0.85rem !important;
+  }
+}
 
 /* Badge do título do projeto */
 .project-title-badge {
@@ -250,7 +332,7 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
    WORKSPACE + PAINEL DE CÓDIGO
    ═══════════════════════════════════════════════════ */
 
-.workspace-area { display: flex; flex: 1; height: calc(100vh - 60px); }
+.workspace-area { display: flex; flex: 1; min-height: 0; }
 #blocklyDiv { flex: 1; height: 100%; }
 
 .code-panel {
@@ -275,6 +357,96 @@ pre {
   height: 100vh !important; z-index: 9999; resize: none; direction: ltr;
 }
 .code-panel.fullscreen > * { direction: ltr; }
+
+/* ═══════════════════════════════════════════════════
+   TOOLBOX COMPACTO — 64 px por padrão, expande no hover
+   ═══════════════════════════════════════════════════ */
+
+/* Contêiner principal do Blockly */
+.blocklyToolboxDiv {
+  width: 64px !important;
+  min-width: 64px !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: hidden !important;
+  background-color: #1a2035 !important;
+  box-shadow: 3px 0 20px rgba(0, 0, 0, 0.28) !important;
+}
+
+.blocklyToolboxDiv:hover {
+  width: 218px !important;
+}
+
+/* Área interna — largura fixa para evitar reflow durante a transição */
+.blocklyToolboxContents {
+  width: 218px !important;
+  padding: 8px 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* Linha de cada categoria */
+.blocklyTreeRow {
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  border-radius: 12px !important;
+  padding: 0 9px !important;
+  cursor: pointer !important;
+  transition: background-color 0.18s ease !important;
+  white-space: nowrap !important;
+}
+
+.blocklyTreeRow:hover {
+  background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+.blocklyTreeSelected .blocklyTreeRow {
+  background-color: rgba(0, 168, 255, 0.18) !important;
+  border-left: 3px solid #00a8ff !important;
+}
+
+/* Wrapper do conteúdo da linha */
+.blocklyTreeRowContentContainer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+/* Ícone colorido (swatch) — maior que o padrão */
+.blocklyTreeIcon {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  border-radius: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Label: escondido, surge com delay após a expansão */
+.blocklyTreeLabel {
+  color: #dde4f0 !important;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  font-family: 'Nunito', sans-serif !important;
+  letter-spacing: 0.2px !important;
+  opacity: 0 !important;
+  transform: translateX(-8px) !important;
+  transition: opacity 0.18s ease, transform 0.18s ease !important;
+  transition-delay: 0s !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+.blocklyToolboxDiv:hover .blocklyTreeLabel {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  transition-delay: 0.14s !important; /* começa a aparecer quando a expansão está quase no fim */
+}
+
+/* Scrollbar do flyout — harmoniza com o tema */
+.blocklyFlyoutScrollbar .blocklyScrollbarHandle {
+  fill: rgba(0, 168, 255, 0.35) !important;
+}
 
 /* ═══════════════════════════════════════════════════
    OVERLAY DE MODAL (base)
