@@ -22,15 +22,14 @@ const BOARDS = {
   nano: { name: 'Arduino Nano', pins: [['D2','2'],['D3 (PWM)','3'],['D4','4'],['D5 (PWM)','5'],['D6 (PWM)','6'],['D7','7'],['D8','8'],['D9 (PWM)','9'],['D10 (PWM)','10'],['D11 (PWM)','11'],['D12','12'],['D13 (LED Interno)','13']] },
   esp32: { name: 'ESP32 DevKit V1', pins: [
     // ── Uso geral (entrada e saída) ──────────────────────────────────────
-    // Pino 0: strapping pin – afeta o modo de boot, usar com cuidado
     ['GPIO 0  ⚠️ boot',   '0' ],
-    ['GPIO 2  (LED)',      '2' ],  // LED interno na maioria dos DevKits
+    ['GPIO 2  (LED)',      '2' ], 
     ['GPIO 4',            '4' ],
-    ['GPIO 5  ⚠️ boot',   '5' ],  // strapping: deve estar HIGH no boot
-    ['GPIO 12 ⚠️ boot',   '12'],  // strapping: nível afeta tensão de flash
+    ['GPIO 5  ⚠️ boot',   '5' ],
+    ['GPIO 12 ⚠️ boot',   '12'],
     ['GPIO 13',           '13'],
     ['GPIO 14',           '14'],
-    ['GPIO 15 ⚠️ boot',   '15'],  // strapping: controla log de boot
+    ['GPIO 15 ⚠️ boot',   '15'],
     ['GPIO 16',           '16'],
     ['GPIO 17',           '17'],
     ['GPIO 18',           '18'],
@@ -157,88 +156,96 @@ const toolboxConfig = {
 // Helpers: erros amigáveis
 // ─────────────────────────────────────────────────────────────────────────────
 
-type FriendlyError = { emoji: string; title: string; message: string; tip: string };
+type FriendlyError = { emoji: string; title: string; message: string; tip: string; rawError: string };
 
 function getFriendlyError(raw: string): FriendlyError {
   const e = raw.toLowerCase();
+  const baseError = { rawError: raw };
 
-  // ── Erros de porta/USB (mensagens do Rust: "Erro na porta COMx", "Erro upload", sem porta selecionada) ──
-  if (
-    e.includes('erro na porta') ||
-    e.includes('erro upload') ||
-    e.includes('could not open port') ||
-    e.includes('no such file') ||
-    e.includes('permission denied') ||
-    e.includes('access is denied') ||
-    (e.includes('porta') && !e.includes('erro no código')) ||
-    e.includes('tty') ||
-    e.includes('serial')
-  ) {
-    return {
-      emoji: '🔌',
-      title: 'Cabo USB não encontrado!',
+  // ── Erros de Download / Extração do CLI (Internet) ──
+  if (e.includes('falha ao baixar') || e.includes('erro ao executar curl') || e.includes('tar') || e.includes('extração') || e.includes('plano b')) {
+    return { ...baseError,
+      emoji: '🌐', title: 'Problema na Internet!',
+      message: 'Não consegui baixar as ferramentas necessárias para preparar o código do robô.',
+      tip: 'Dica: Verifique a conexão com a internet do computador e tente novamente.',
+    };
+  }
+
+  // ── Erros de Instalação de Placas (Sem internet) ──
+  if (e.includes('falha ao atualizar o index') || e.includes('update-index') || e.includes('erro ao instalar core')) {
+    return { ...baseError,
+      emoji: '📦', title: 'Faltam os pacotes da placa!',
+      message: 'O computador precisa baixar informações da placa pela primeira vez, mas a internet parece ter falhado.',
+      tip: 'Dica: Verifique a conexão com a internet. Essa etapa só acontece uma vez!',
+    };
+  }
+
+  // ── Erros Específicos do ESP32 (URL injection) ──
+  if (e.includes('esp32 no yaml') || e.includes('espressif') || e.includes('injeção da url')) {
+    return { ...baseError,
+      emoji: '🛠️', title: 'Erro ao configurar a placa ESP32!',
+      message: 'Ocorreu um problema ao tentar adicionar as configurações especiais da placa ESP32.',
+      tip: 'Dica: Chame o professor! Pode ser necessário checar as permissões do computador.',
+    };
+  }
+
+  // ── Erros de Porta Ocupada / Acesso Negado ──
+  if (e.includes('busy') || e.includes('em uso') || e.includes('acesso negado') || e.includes('access is denied') || e.includes('permission denied')) {
+    return { ...baseError,
+      emoji: '🚧', title: 'A porta USB está ocupada!',
+      message: 'Outro programa (ou o nosso Monitor Serial) já está usando esta porta para conversar com o robô.',
+      tip: 'Dica: Feche o Chat/Monitor clicando em "🛑 Parar" ou desconecte e reconecte o cabo USB!',
+    };
+  }
+
+  // ── Erros de porta/USB (Não encontrada) ──
+  if (e.includes('erro na porta') || e.includes('erro upload') || e.includes('could not open port') || e.includes('não foi possível abrir') || e.includes('no such file')) {
+    return { ...baseError,
+      emoji: '🔌', title: 'Cabo USB não encontrado!',
       message: 'O computador não conseguiu encontrar o Arduino. Parece que o cabo USB está desconectado ou na porta errada.',
       tip: 'Dica: Verifique se o cabo está bem encaixado e tente clicar em 🔄 para atualizar as portas!',
     };
   }
 
   // ── Erro de compilador não encontrado (arduino-cli ausente) ──
-  if (e.includes('erro compilador') || e.includes('não foi possível') || e.includes('not found')) {
-    return {
-      emoji: '⚙️',
-      title: 'Arduino CLI não encontrado!',
-      message: 'O programa que converte os blocos para o robô não foi encontrado no computador.',
+  if (e.includes('erro compilador') || e.includes('not found')) {
+    return { ...baseError,
+      emoji: '⚙️', title: 'Ferramenta ausente!',
+      message: 'O programa que converte os blocos para o robô não foi encontrado e o plano de download falhou.',
       tip: 'Dica: Reinstale o OficinaCode ou chame o professor para verificar a instalação!',
     };
   }
 
-  // ── Erro de compilação do código gerado pelos blocos (Rust: "Erro no código:\n...") ──
-  if (
-    e.includes('erro no código') ||
-    e.includes('error:') ||       // saída do avr-gcc em inglês
-    e.includes('syntax error') ||
-    e.includes('expected') ||
-    e.includes('undeclared') ||
-    e.includes('was not declared')
-  ) {
-    return {
-      emoji: '🧩',
-      title: 'Hmm… algo está errado nas peças!',
+  // ── Erro de compilação do código gerado pelos blocos ──
+  if (e.includes('erro no código') || e.includes('error:') || e.includes('syntax error') || e.includes('expected') || e.includes('undeclared') || e.includes('was not declared')) {
+    return { ...baseError,
+      emoji: '🧩', title: 'Hmm… algo está errado nas peças!',
       message: 'O código gerado pelos blocos tem um probleminha. Às vezes isso acontece quando os blocos estão numa ordem estranha.',
       tip: 'Dica: Tente remover a última peça que você colocou e montar de novo. Se não resolver, chame o professor!',
     };
   }
 
   // ── Erros de comunicação com a placa (avrdude) ──
-  if (
-    e.includes('avrdude') ||
-    e.includes('programmer') ||
-    e.includes('not in sync') ||
-    e.includes('out of sync') ||
-    e.includes('stk500')
-  ) {
-    return {
-      emoji: '😵',
-      title: 'Não consegui falar com o Arduino!',
-      message: 'O computador conectou no Arduino, mas a placa não respondeu corretamente. A placa selecionada pode estar errada.',
-      tip: 'Dica: Verifique se você escolheu a placa certa (Uno, Nano ou ESP32) no seletor do meio da tela!',
+  if (e.includes('avrdude') || e.includes('programmer') || e.includes('not in sync') || e.includes('out of sync') || e.includes('stk500')) {
+    return { ...baseError,
+      emoji: '😵', title: 'Não consegui falar com o Arduino!',
+      message: 'O computador conectou, mas a placa não respondeu corretamente. O modelo da placa pode estar errado.',
+      tip: 'Dica: Verifique se você escolheu a placa certa (Uno, Nano ou ESP32) no topo da tela!',
     };
   }
 
   // ── Timeout ──
   if (e.includes('timeout') || e.includes('time out') || e.includes('timed out')) {
-    return {
-      emoji: '⏰',
-      title: 'Demorou demais…',
+    return { ...baseError,
+      emoji: '⏰', title: 'Demorou demais…',
       message: 'O Arduino não respondeu a tempo. Às vezes isso acontece quando a conexão está instável.',
       tip: 'Dica: Desconecte e reconecte o cabo USB e tente novamente!',
     };
   }
 
-  // ── Fallback genérico (NÃO culpa as peças) ──
-  return {
-    emoji: '😕',
-    title: 'Algo deu errado por aqui...',
+  // ── Fallback genérico ──
+  return { ...baseError,
+    emoji: '😕', title: 'Algo deu errado por aqui...',
     message: 'Ocorreu um erro inesperado. Não se preocupe, isso acontece às vezes!',
     tip: 'Dica: Tente de novo. Se o erro continuar, chame o professor para ajudar!',
   };
@@ -312,7 +319,8 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   // ── Novos estados de UI ───────────────────────────────────────────────────
   const [uploadStage, setUploadStage]           = useState<UploadStage | null>(null);
   const [friendlyError, setFriendlyError]       = useState<FriendlyError | null>(null);
-  const [orphanWarning, setOrphanWarning]       = useState<string[]>([]); // lista de nomes dos blocos órfãos
+  const [showTechDetails, setShowTechDetails]   = useState(false); // NOVO ESTADO AQUI
+  const [orphanWarning, setOrphanWarning]       = useState<string[]>([]);
   const isUploadingRef                          = useRef(false);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -470,7 +478,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     }).eq('id', projectId);
     setIsSaving(false);
     if (!error) setSaveStatus('success');
-    else { setFriendlyError({ emoji: '☁️', title: 'Não consegui salvar!', message: error.message, tip: 'Verifique sua conexão com a internet e tente de novo.' }); }
+    else { setFriendlyError({ emoji: '☁️', title: 'Não consegui salvar!', message: error.message, tip: 'Verifique sua conexão com a internet e tente de novo.', rawError: error.message }); }
   };
 
   const handleUploadCode = async () => {
@@ -490,6 +498,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         title: 'Faltam peças importantes!',
         message: 'As peças PREPARAR e AGIR são obrigatórias para o robô funcionar.',
         tip: 'Dica: Mexa em uma peça e tente de novo para atualizar o código!',
+        rawError: 'Missing setup() or loop() in generated code.'
       });
       return;
     }
@@ -521,6 +530,12 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     } finally {
       isUploadingRef.current = false;
     }
+  };
+
+  // Fechar o modal de erro e resetar o estado técnico
+  const handleCloseError = () => {
+    setFriendlyError(null);
+    setShowTechDetails(false);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -737,7 +752,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         </div>
       )}
 
-      {/* ── ERRO AMIGÁVEL ─────────────────────────────────────────────────── */}
+      {/* ── ERRO AMIGÁVEL COM DETALHES TÉCNICOS ───────────────────────────── */}
       {friendlyError && (
         <div className="modal-overlay">
           <div className="friendly-error-modal">
@@ -748,10 +763,28 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
               <span>💡</span>
               <span>{friendlyError.tip}</span>
             </div>
-            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={() => setFriendlyError(null)}>
+
+            <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '10px' }}>
+              <button className="btn-primary" style={{ flex: 1 }} onClick={handleCloseError}>
                 Entendi, vou tentar!
               </button>
+            </div>
+
+            {/* Área do professor / Detalhes técnicos */}
+            <div style={{ width: '100%', marginTop: '15px' }}>
+              <button
+                className="btn-outline"
+                style={{ fontSize: '0.8rem', padding: '5px 10px', border: 'none', background: 'transparent', textDecoration: 'underline', color: '#636e72', cursor: 'pointer', margin: '0 auto', display: 'block' }}
+                onClick={() => setShowTechDetails(!showTechDetails)}
+              >
+                {showTechDetails ? 'Ocultar detalhes técnicos' : '🛠️ Ver detalhes técnicos (Professor)'}
+              </button>
+
+              {showTechDetails && (
+                <pre style={{ textAlign: 'left', backgroundColor: '#2d3436', color: '#ff7675', padding: '10px', borderRadius: '5px', fontSize: '0.75rem', marginTop: '10px', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto' }}>
+                  {friendlyError.rawError}
+                </pre>
+              )}
             </div>
           </div>
         </div>

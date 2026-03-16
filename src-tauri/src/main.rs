@@ -5,301 +5,232 @@ use std::process::Command;
 use std::env;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use std::time::Duration;
-use tauri::path::BaseDirectory;
 
 struct AppState {
     is_reading_serial: Arc<AtomicBool>,
 }
 
-// ── Localiza o arduino-cli com três fallbacks ─────────────────────────────────
-//
-//  1. Recurso bundlado dentro do instalador  (.../resources/arduino-cli.exe)
-//  2. Cache local do usuário                 (%LOCALAPPDATA%\OficinaCode\arduino-cli.exe)
-//  3. PATH do sistema                        (where arduino-cli)
-//
-fn find_arduino_cli(app_handle: &tauri::AppHandle) -> Option<std::path::PathBuf> {
-
-    // ── Fallback 1: bundlado ────────────────────────────────────────────────
-    if let Ok(bundled) = app_handle.path().resolve("arduino-cli.exe", BaseDirectory::Resource){
-        if bundled.exists() {
-            println!(">>> [CLI] Encontrado bundlado: {:?}", bundled);
-            return Some(bundled);
-        }
+/// Tenta encontrar o arduino-cli no PATH da máquina.
+/// PLANO B: Se não achar, faz o download do binário oficial da internet,
+/// descompacta na pasta temporária do sistema e retorna o caminho.
+fn find_or_download_cli() -> Result<String, String> {
+    // 1. Tenta achar o comando no PATH global
+    if Command::new("arduino-cli").arg("version").output().is_ok() {
+        println!(">>> [CLI] arduino-cli encontrado no PATH.");
+        return Ok("arduino-cli".to_string());
     }
 
-    // ── Fallback 2: cache local ─────────────────────────────────────────────
-    #[cfg(target_os = "windows")]
-    if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
-        let cached = std::path::Path::new(&local_app_data)
-            .join("Oficina Code")
-            .join("resources")        
-            .join("arduino-cli.exe");
-        if cached.exists() {
-            println!(">>> [CLI] Encontrado em cache local: {:?}", cached);
-            return Some(cached);
-        }
+    // 2. Define a pasta local/temporária (Plano B)
+    let temp_dir = env::temp_dir().join("oficina_code_cli");
+    let exe_name = if cfg!(target_os = "windows") { "arduino-cli.exe" } else { "arduino-cli" };
+    let local_cli = temp_dir.join(exe_name);
+
+    // Se já tivermos baixado antes, apenas usamos ele
+    if local_cli.exists() {
+        println!(">>> [CLI] arduino-cli encontrado localmente em {:?}", local_cli);
+        return Ok(local_cli.to_string_lossy().to_string());
     }
 
-    // ── Fallback 3: PATH do sistema ─────────────────────────────────────────
-    #[cfg(target_os = "windows")]
-    {
-        if let Ok(output) = Command::new("where").arg("arduino-cli").output() {
-            if output.status.success() {
-                let path_str = String::from_utf8_lossy(&output.stdout);
-                let first_line = path_str.lines().next().unwrap_or("").trim().to_string();
-                if !first_line.is_empty() {
-                    let path = std::path::PathBuf::from(&first_line);
-                    if path.exists() {
-                        println!(">>> [CLI] Encontrado no PATH: {:?}", path);
-                        return Some(path);
-                    }
-                }
-            }
-        }
-    }
+    // 3. PLANO B: Baixar e extrair
+    println!(">>> [CLI] arduino-cli não encontrado no sistema. Iniciando PLANO B: Download...");
+    let _ = fs::create_dir_all(&temp_dir);
 
-    // Linux / ChromeOS (Crostini)
-    #[cfg(not(target_os = "windows"))]
-    {
-        // Cache local em ~/.local/share/OficinaCode/
-        if let Ok(home) = env::var("HOME") {
-            let cached = std::path::Path::new(&home)
-                .join(".local")
-                .join("share")
-                .join("OficinaCode")
-                .join("arduino-cli");
-            if cached.exists() {
-                println!(">>> [CLI] Encontrado em cache local (Linux): {:?}", cached);
-                return Some(cached);
-            }
-        }
-
-        // PATH via `which`
-        if let Ok(output) = Command::new("which").arg("arduino-cli").output() {
-            if output.status.success() {
-                let path_str = String::from_utf8_lossy(&output.stdout);
-                let first_line = path_str.lines().next().unwrap_or("").trim().to_string();
-                if !first_line.is_empty() {
-                    let path = std::path::PathBuf::from(&first_line);
-                    if path.exists() {
-                        println!(">>> [CLI] Encontrado no PATH (Linux): {:?}", path);
-                        return Some(path);
-                    }
-                }
-            }
-        }
-    }
-
-    println!(">>> [CLI] arduino-cli NÃO encontrado em nenhum dos fallbacks!");
-    None
-}
-
-// ── Verifica se o arduino-cli está disponível ────────────────────────────────
-#[tauri::command]
-fn check_arduino_cli(app_handle: tauri::AppHandle) -> bool {
-    find_arduino_cli(&app_handle).is_some()
-}
-
-// ── Setup: baixa e instala o arduino-cli + cores necessárias ─────────────────
-#[tauri::command]
-async fn setup_arduino_cli(
-    window: tauri::Window,
-    app_handle: tauri::AppHandle,
-) -> Result<String, String> {
-
-    // Se já tiver, não faz nada
-    if find_arduino_cli(&app_handle).is_some() {
-        let _ = window.emit("setup-progress", "arduino-cli já está instalado!");
-        return Ok("já instalado".to_string());
-    }
-
-    let _ = window.emit("setup-progress", "Baixando o arduino-cli...");
-
-    // Determina onde salvar
-    #[cfg(target_os = "windows")]
-    let dest_dir = {
-        let local = env::var("LOCALAPPDATA")
-            .map_err(|_| "LOCALAPPDATA não encontrado".to_string())?;
-        std::path::Path::new(&local).join("Oficina Code")
+    // Escolhe a URL oficial baseada no Sistema Operacional
+    let url = if cfg!(target_os = "windows") {
+        "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip"
+    } else if cfg!(target_os = "macos") {
+        "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_macOS_64bit.tar.gz"
+    } else {
+        "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz"
     };
 
-    #[cfg(not(target_os = "windows"))]
-    let dest_dir = {
-        let home = env::var("HOME")
-            .map_err(|_| "HOME não encontrado".to_string())?;
-        std::path::Path::new(&home)
-            .join(".local").join("share").join("Oficina Code")
-    };
+    let archive_name = if cfg!(target_os = "windows") { "cli.zip" } else { "cli.tar.gz" };
+    let archive_path = temp_dir.join(archive_name);
 
-    fs::create_dir_all(&dest_dir)
-        .map_err(|e| format!("Erro ao criar pasta: {}", e))?;
+    println!(">>> [CLI] Baixando CLI de {} ...", url);
+    // Usamos o curl (nativo no Win 10+, Mac e Linux) para não precisar de bibliotecas extras
+    let curl_status = Command::new("curl")
+        .args(["-L", url, "-o", archive_path.to_str().unwrap()])
+        .status()
+        .map_err(|e| format!("Erro ao executar curl (download): {}", e))?;
 
-    // URLs por plataforma
-    #[cfg(target_os = "windows")]
-    let url = "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip";
-    #[cfg(target_os = "linux")]
-    let url = "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz";
+    if !curl_status.success() {
+        return Err("Falha ao baixar o arquivo do arduino-cli.".to_string());
+    }
 
-    let zip_path = dest_dir.join("arduino-cli.zip");
+    println!(">>> [CLI] Descompactando CLI...");
+    // Usamos tar (nativo no Win 10+, Mac e Linux)
+    let tar_status = Command::new("tar")
+        .args(["-xf", archive_path.to_str().unwrap(), "-C", temp_dir.to_str().unwrap()])
+        .status()
+        .map_err(|e| format!("Erro ao executar tar (extração): {}", e))?;
 
-    // Download via PowerShell / curl
-    #[cfg(target_os = "windows")]
+    if !tar_status.success() {
+        return Err("Falha ao descompactar o arduino-cli.".to_string());
+    }
+
+    // Garante permissão de execução no Linux/Mac
+    #[cfg(unix)]
     {
-        let status = Command::new("powershell")
-            .args(["-Command",
-                &format!("Invoke-WebRequest -Uri '{}' -OutFile '{}'",
-                    url, zip_path.display())])
-            .status()
-            .map_err(|e| format!("Erro no download: {}", e))?;
-        if !status.success() {
-            return Err("Falha ao baixar o arduino-cli".to_string());
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(mut perms) = fs::metadata(&local_cli).map(|m| m.permissions()) {
+            perms.set_mode(0o755);
+            let _ = fs::set_permissions(&local_cli, perms);
         }
     }
 
-    #[cfg(not(target_os = "windows"))]
-    {
-        let status = Command::new("curl")
-            .args(["-L", "-o", zip_path.to_str().unwrap(), url])
-            .status()
-            .map_err(|e| format!("Erro no download: {}", e))?;
-        if !status.success() {
-            return Err("Falha ao baixar o arduino-cli".to_string());
-        }
+    if local_cli.exists() {
+        println!(">>> [CLI] Download e instalação concluídos com sucesso!");
+        // Limpa o arquivo zip/tar.gz para poupar espaço
+        let _ = fs::remove_file(archive_path);
+        Ok(local_cli.to_string_lossy().to_string())
+    } else {
+        Err("arduino-cli não foi encontrado mesmo após a extração.".to_string())
     }
-
-    let _ = window.emit("setup-progress", "Extraindo o arduino-cli...");
-
-    // Extração
-    #[cfg(target_os = "windows")]
-    {
-        let dest_str = dest_dir.display().to_string();
-        let zip_str  = zip_path.display().to_string();
-        let status = Command::new("powershell")
-            .args(["-Command",
-                &format!("Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
-                    zip_str, dest_str)])
-            .status()
-            .map_err(|e| format!("Erro na extração: {}", e))?;
-        if !status.success() {
-            return Err("Falha ao extrair o arduino-cli".to_string());
-        }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        let status = Command::new("tar")
-            .args(["-xzf", zip_path.to_str().unwrap(), "-C", dest_dir.to_str().unwrap()])
-            .status()
-            .map_err(|e| format!("Erro na extração: {}", e))?;
-        if !status.success() {
-            return Err("Falha ao extrair o arduino-cli".to_string());
-        }
-        // Garante permissão de execução no Linux
-        let cli_path = dest_dir.join("arduino-cli");
-        let _ = Command::new("chmod").args(["+x", cli_path.to_str().unwrap()]).status();
-    }
-
-    let _ = fs::remove_file(&zip_path);
-
-    // Verifica se o executável existe agora
-    let cli = find_arduino_cli(&app_handle)
-        .ok_or("arduino-cli não encontrado após extração".to_string())?;
-
-    let _ = window.emit("setup-progress", "Atualizando índice de placas...");
-
-    // Atualiza índice
-    let _ = Command::new(&cli).arg("core").arg("update-index").status();
-
-    let _ = window.emit("setup-progress", "Instalando suporte ao Arduino AVR...");
-
-    // Instala core AVR
-    let _ = Command::new(&cli)
-        .args(["core", "install", "arduino:avr"])
-        .status();
-
-    let _ = window.emit("setup-progress", "Pronto! Arduino-cli instalado com sucesso.");
-
-    Ok("instalado".to_string())
 }
 
-// ── Upload de código ──────────────────────────────────────────────────────────
+/// Garante que os pacotes de placas (cores) estejam instalados.
+/// Se for ESP32, adiciona o gerenciador de URLs antes.
+fn ensure_core_installed(cli_path: &str, placa: &str) -> Result<String, String> {
+    let (core, fqbn) = match placa {
+        "uno"   => ("arduino:avr", "arduino:avr:uno"),
+        "nano"  => ("arduino:avr", "arduino:avr:nano"),
+        "esp32" => ("esp32:esp32", "esp32:esp32:esp32"),
+        _       => ("arduino:avr", "arduino:avr:uno"),
+    };
+
+    println!(">>> [CORE] Verificando se o pacote da placa '{}' está instalado...", core);
+    let list_output = Command::new(cli_path).arg("core").arg("list").output()
+        .map_err(|e| format!("Erro ao listar cores: {}", e))?;
+    
+    let list_str = String::from_utf8_lossy(&list_output.stdout);
+
+    if !list_str.contains(core) {
+        println!(">>> [CORE] Pacote '{}' NÃO encontrado. Iniciando instalação...", core);
+
+        // --- PASSO EXTRA PARA ESP32 ---
+        if core == "esp32:esp32" {
+            println!(">>> [CORE] ESP32 detectado. Configurando URLs adicionais...");
+            // Inicializa a config (ignoramos falha se já existir)
+            let _ = Command::new(cli_path).args(["config", "init"]).output();
+
+            // Adiciona a URL do gerenciador de placas da Espressif
+            let esp_url = "https://espressif.github.io/arduino-esp32/package_esp32_index.json";
+            let add_url = Command::new(cli_path)
+                .args(["config", "add", "board_manager.additional_urls", esp_url])
+                .output()
+                .map_err(|e| format!("Erro na injeção da URL do ESP32: {}", e))?;
+
+            if !add_url.status.success() {
+                let err = String::from_utf8_lossy(&add_url.stderr);
+                return Err(format!("Erro ao configurar URL do ESP32 no YAML: {}", err));
+            }
+        }
+
+        // Atualiza a lista de placas (equivalente a clicar em atualizar no Gerenciador de Placas)
+        println!(">>> [CORE] Atualizando o index de pacotes (isso pode levar alguns segundos)...");
+        let update = Command::new(cli_path).args(["core", "update-index"]).output()
+            .map_err(|e| format!("Erro no update-index: {}", e))?;
+            
+        if !update.status.success() {
+            return Err("Falha ao atualizar o index das placas (sem internet?).".to_string());
+        }
+
+        // Instala o core efetivamente
+        println!(">>> [CORE] Baixando e instalando o core {}...", core);
+        let install = Command::new(cli_path).args(["core", "install", core]).output()
+            .map_err(|e| format!("Erro ao instalar core: {}", e))?;
+
+        if !install.status.success() {
+            let err = String::from_utf8_lossy(&install.stderr);
+            return Err(format!("Erro fatal ao instalar pacote {}:\n{}", core, err));
+        }
+
+        println!(">>> [CORE] Instalação do core concluída com sucesso!");
+    } else {
+        println!(">>> [CORE] Pacote '{}' já está instalado e pronto para uso.", core);
+    }
+
+    Ok(fqbn.to_string())
+}
+
 #[tauri::command]
 fn upload_code(
     codigo: String,
     placa: String,
     porta: String,
     state: tauri::State<AppState>,
-    app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
-
     println!(">>> [1] Iniciando processo de envio...");
-
-    // Para o serial antes de qualquer coisa
+    println!(">>> [2] Desligando o monitor serial (liberando a porta)...");
     state.is_reading_serial.store(false, Ordering::Relaxed);
     std::thread::sleep(Duration::from_millis(500));
 
-    let fqbn = match placa.as_str() {
-        "uno"   => "arduino:avr:uno",
-        "nano"  => "arduino:avr:nano",
-        "esp32" => "esp32:esp32:esp32",
-        _       => "arduino:avr:uno",
-    };
+    // Passo Dinâmico: Achar o CLI (Plano A ou Plano B)
+    println!(">>> [3] Buscando utilitário arduino-cli...");
+    let cli = find_or_download_cli()?;
 
-    let cli = find_arduino_cli(&app_handle)
-        .ok_or("Erro compilador: arduino-cli não encontrado. Configure o ambiente primeiro.".to_string())?;
+    // Passo Dinâmico: Garantir Core e FQBN
+    println!(">>> [4] Resolvendo dependências da placa {}", placa);
+    let fqbn = ensure_core_installed(&cli, &placa)?;
 
-    let temp_dir   = env::temp_dir();
-    let sketch_dir = temp_dir.join("oficina_code_sketch");
+    let temp_dir    = env::temp_dir();
+    let sketch_dir  = temp_dir.join("oficina_code_sketch");
     let sketch_path = sketch_dir.join("oficina_code_sketch.ino");
 
-    println!(">>> [4] Criando pasta temporária...");
+    println!(">>> [5] Criando pasta temporária do sketch...");
     let _ = fs::create_dir_all(&sketch_dir);
 
-    println!(">>> [5] Salvando código...");
-    fs::write(&sketch_path, &codigo)
-        .map_err(|e| format!("Erro ao criar arquivo: {}", e))?;
+    println!(">>> [6] Salvando o código C++ gerado...");
+    if let Err(e) = fs::write(&sketch_path, codigo) {
+        return Err(format!("Erro ao criar arquivo: {}", e));
+    }
 
-    println!(">>> [6] Compilando com: {:?}", cli);
-    let compile_output = Command::new(&cli)
+    println!(">>> [7] Compilando com FQBN: {}", fqbn);
+    let compile_output = match Command::new(&cli)
         .arg("compile")
-        .arg("-b").arg(fqbn)
+        .arg("-b").arg(&fqbn)
         .arg(&sketch_dir)
         .output()
-        .map_err(|e| format!("Erro compilador: {}", e))?;
+    {
+        Ok(out) => out,
+        Err(e)  => return Err(format!("Erro no processo de compilação: {}", e)),
+    };
 
     if !compile_output.status.success() {
         let erro = String::from_utf8_lossy(&compile_output.stderr);
-        return Err(format!("Erro no código:\n{}", erro));
+        return Err(format!("Erro no código (Compilação falhou):\n{}", erro));
     }
 
     println!(">>> [8] Enviando para a porta {}...", porta);
-    let upload_output = Command::new(&cli)
+    let upload_output = match Command::new(&cli)
         .arg("upload")
-        .arg("-b").arg(fqbn)
+        .arg("-b").arg(&fqbn)
         .arg("-p").arg(&porta)
         .arg(&sketch_dir)
         .output()
-        .map_err(|e| format!("Erro upload: {}", e))?;
+    {
+        Ok(out) => out,
+        Err(e)  => return Err(format!("Erro upload: {}", e)),
+    };
 
     if !upload_output.status.success() {
         let erro = String::from_utf8_lossy(&upload_output.stderr);
-        return Err(format!("Erro na porta {}:\n{}", porta, erro));
+        return Err(format!("Erro ao gravar na porta {}:\n{}", porta, erro));
     }
 
     println!(">>> [9] UPLOAD CONCLUÍDO COM SUCESSO!");
     Ok("Sucesso!".to_string())
 }
 
-// ── Monitor serial ────────────────────────────────────────────────────────────
 #[tauri::command]
 fn start_serial(
     porta: String,
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> Result<String, String> {
-
     state.is_reading_serial.store(false, Ordering::Relaxed);
     std::thread::sleep(Duration::from_millis(200));
 
@@ -313,8 +244,7 @@ fn start_serial(
         {
             Ok(p)  => p,
             Err(_) => {
-                let _ = window.emit("serial-error",
-                    format!("Não foi possível abrir a porta {}", porta));
+                let _ = window.emit("serial-error", format!("Não foi possível abrir a porta {}", porta));
                 return;
             }
         };
@@ -339,7 +269,9 @@ fn start_serial(
                         std::thread::sleep(Duration::from_millis(20));
                     }
                 }
-                _ => std::thread::sleep(Duration::from_millis(10)),
+                _ => {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
             }
         }
     });
@@ -381,9 +313,7 @@ fn main() {
             upload_code,
             start_serial,
             stop_serial,
-            get_available_ports,
-            check_arduino_cli,
-            setup_arduino_cli,
+            get_available_ports
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
