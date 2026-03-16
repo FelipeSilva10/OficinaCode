@@ -33,7 +33,7 @@ fn find_arduino_cli(app_handle: &tauri::AppHandle) -> Option<std::path::PathBuf>
     #[cfg(target_os = "windows")]
     if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
         let cached = std::path::Path::new(&local_app_data)
-            .join("OficinaCode")
+            .join("Oficina Code")
             .join("arduino-cli.exe");
         if cached.exists() {
             println!(">>> [CLI] Encontrado em cache local: {:?}", cached);
@@ -121,7 +121,7 @@ async fn setup_arduino_cli(
     let dest_dir = {
         let local = env::var("LOCALAPPDATA")
             .map_err(|_| "LOCALAPPDATA não encontrado".to_string())?;
-        std::path::Path::new(&local).join("OficinaCode")
+        std::path::Path::new(&local).join("Oficina Code")
     };
 
     #[cfg(not(target_os = "windows"))]
@@ -129,7 +129,7 @@ async fn setup_arduino_cli(
         let home = env::var("HOME")
             .map_err(|_| "HOME não encontrado".to_string())?;
         std::path::Path::new(&home)
-            .join(".local").join("share").join("OficinaCode")
+            .join(".local").join("share").join("Oficina Code")
     };
 
     fs::create_dir_all(&dest_dir)
