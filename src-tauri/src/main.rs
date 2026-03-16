@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tauri::{Emitter, Manager};
 use std::time::Duration;
+use tauri::path::BaseDirectory;
 
 struct AppState {
     is_reading_serial: Arc<AtomicBool>,
@@ -21,8 +22,7 @@ struct AppState {
 fn find_arduino_cli(app_handle: &tauri::AppHandle) -> Option<std::path::PathBuf> {
 
     // ── Fallback 1: bundlado ────────────────────────────────────────────────
-    if let Ok(res_dir) = app_handle.path().resource_dir() {
-        let bundled = res_dir.join("arduino-cli.exe");
+    if let Ok(bundled) = app_handle.path().resolve("resources/arduino-cli.exe", BaseDirectory::Resource) {
         if bundled.exists() {
             println!(">>> [CLI] Encontrado bundlado: {:?}", bundled);
             return Some(bundled);
