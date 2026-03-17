@@ -310,7 +310,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
 
   // ── Inicialização do Blockly ─────────────────────────────────────────────────
 
-  useEffect(() => {
+useEffect(() => {
     if (!blocklyDiv.current || workspace.current) return;
 
     workspace.current = Blockly.inject(blocklyDiv.current, {
@@ -321,37 +321,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
       theme: oficinaTheme,
       zoom: { controls: true, wheel: true, startScale: 1.0, maxScale: 3, minScale: 0.3, scaleSpeed: 1.2 },
     });
-
-    // O Blockly reaplica estilos inline no toolbox a cada interação.
-    // Um MutationObserver garante que ele permaneça escondido para sempre,
-    // independente do que o Blockly faça internamente.
-    const hideNativeToolbox = () => {
-      const el = blocklyDiv.current?.querySelector('.blocklyToolboxDiv') as HTMLElement | null;
-      if (el && (el.style.display !== 'none' || el.style.width !== '0px')) {
-        el.style.cssText = 'display:none!important;width:0!important;min-width:0!important;';
-        workspace.current?.resize();
-      }
-    };
-
-    // Esconde imediatamente após inject
-    hideNativeToolbox();
-    setTimeout(hideNativeToolbox, 50);
-
-    // Observa mudanças de atributo/subtree para re-esconder se o Blockly tentar mostrar
-    const toolboxObserver = new MutationObserver(hideNativeToolbox);
-    toolboxObserver.observe(blocklyDiv.current, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['style', 'class'],
-    });
-
-    // Limpa o observer quando o componente desmontar
-    const originalDispose = workspace.current.dispose.bind(workspace.current);
-    workspace.current.dispose = () => {
-      toolboxObserver.disconnect();
-      originalDispose();
-    };
 
     workspace.current.addChangeListener((event) => {
       if (event.isUiEvent) return;
@@ -634,8 +603,16 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         </div>
       </header>
 
-      {/* ── WORKSPACE ── */}
+{/* ── WORKSPACE ── */}
       <div className="workspace-area">
+        
+        {/* CSS para forçar a barra nativa do Blockly a sumir sem quebrar o canvas */}
+        <style>{`
+          .blocklyToolboxDiv {
+            display: none !important;
+          }
+        `}</style>
+
         {/* Barra lateral compacta de categorias */}
         <CompactToolbox workspace={workspace.current} readOnly={readOnly} />
 
