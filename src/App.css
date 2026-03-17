@@ -2,14 +2,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
 
 :root {
-  --primary: #00a8ff;
-  --secondary: #4cd137;
-  --accent: #ffffff;
-  --dark: #2f3542;
-  --background: #f4f7f6;
+  /* Nova Paleta baseada na Logo Oficina Code e nas suas escolhas */
+  --primary: #00a8ff;        
+  --secondary: #4cd137;      
+  --accent: #ffffff;         
+  --dark: #2f3542;           
+  --background: #f4f7f6;     
   --white: #ffffff;
-  --danger: #ff4757;
-  --topbar-h: 60px;
+  --danger: #ff4757;         
 }
 
 /* --- Estilos Globais --- */
@@ -29,7 +29,38 @@ body, html, #root {
 }
 
 /* =========================================
-   TELA DE LOGIN
+   BLOCKLY — REMOVE BARRA COMPACTA DE ÍCONES
+   =========================================
+   O Blockly 12 renderiza uma faixa estreita à esquerda
+   do toolbox que exibe apenas o ícone/emoji de cada
+   categoria quando o flyout está fechado.
+   As regras abaixo escondem essa faixa e mantêm
+   apenas o painel completo com os nomes das categorias.
+   ========================================= */
+
+/* Ícone compacto de cada categoria (quadradinho colorido) */
+.blocklyToolboxCategoryIcon {
+  display: none !important;
+}
+
+/* Faixa estreita gerada quando o toolbox entra em modo "compact" */
+.blocklyToolbox .blocklyToolboxContents > .blocklyToolboxCategory > .blocklyTreeRow {
+  padding-left: 12px !important;
+}
+
+/* Remove o indicador colorido que o Blockly injeta antes do label */
+.blocklyTreeRowContentContainer {
+  gap: 0 !important;
+}
+
+/* Garante que o label da categoria sempre aparece (nunca some no modo ícone) */
+.blocklyTreeLabel {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* =========================================
+   TELA DE LOGIN (AGORA COM VIDA!)
    ========================================= */
 .login-container {
   display: flex;
@@ -40,6 +71,7 @@ body, html, #root {
   z-index: 1;
 }
 
+/* O CARTÃO MÁGICO */
 .login-card {
   background-color: var(--white);
   padding: 50px 40px;
@@ -53,19 +85,18 @@ body, html, #root {
 }
 
 @keyframes popIn {
-  0%   { opacity: 0; transform: scale(0.9) translateY(30px); }
-  100% { opacity: 1; transform: scale(1)   translateY(0); }
+  0% { opacity: 0; transform: scale(0.9) translateY(30px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.login-card p {
-  color: #7f8c8d;
+.login-card p { 
+  color: #7f8c8d; 
   font-size: 1.1rem;
-  margin-bottom: 30px;
+  margin-bottom: 30px; 
   font-weight: 700;
 }
 
-.login-options,
-.login-form {
+.login-options, .login-form {
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -102,7 +133,7 @@ body, html, #root {
   transform: translateY(-2px);
 }
 
-/* --- Botões --- */
+/* --- Botões Infantis (Estilo Jogo) --- */
 button {
   padding: 16px;
   border: none;
@@ -111,32 +142,46 @@ button {
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.1s, box-shadow 0.1s;
-  box-shadow: 0 6px 0px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 0px rgba(0,0,0,0.2); 
 }
 
 button:active {
   transform: translateY(6px);
-  box-shadow: 0 0px 0px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0px 0px rgba(0,0,0,0.2);
 }
 
-.btn-primary  { background-color: #ef9f4b; color: white; box-shadow: 0 6px 0px #cf8235; }
-.btn-secondary{ background-color: #23638c; color: white; box-shadow: 0 6px 0px #1a4b6b; }
-.btn-outline  { background-color: #e73561; color: white; box-shadow: 0 6px 0px #bf254c; }
-.btn-danger   { background-color: var(--danger); color: var(--white) !important; box-shadow: 0 6px 0px #d63031; }
+.btn-primary { 
+  background-color: #ef9f4b; 
+  color: white; 
+  box-shadow: 0 6px 0px #cf8235; 
+}
 
-.btn-text {
-  background-color: transparent;
-  color: #a4b0be;
-  box-shadow: none;
-  text-decoration: underline;
+.btn-secondary { 
+  background-color: #23638c; 
+  color: white; 
+  box-shadow: 0 6px 0px #1a4b6b;
+}
+
+.btn-outline { 
+  background-color: #e73561; 
+  color: white; 
+  box-shadow: 0 6px 0px #bf254c;
+}
+
+.btn-text { 
+  background-color: transparent; 
+  color: #a4b0be; 
+  box-shadow: none; 
+  text-decoration: underline; 
   padding: 5px;
   font-size: 1rem;
 }
-.btn-text:hover  { color: var(--dark); }
+
+.btn-text:hover { color: var(--dark); }
 .btn-text:active { transform: translateY(2px); }
 
 /* =========================================
-   TOPBAR — CSS GRID (responsivo de verdade)
+   TELA DA IDE E WORKSPACE
    ========================================= */
 .app-container {
   display: flex;
@@ -145,59 +190,99 @@ button:active {
 }
 
 .topbar {
-  height: var(--topbar-h);
+  height: 60px;
   background-color: var(--white);
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
-  padding: 0 12px;
-  gap: 8px;
+  padding: 0 15px;
   border-bottom: 2px solid #e0e6ed;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  gap: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
   z-index: 10;
 }
 
-/* Coluna esquerda */
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;              /* Permite truncar o título */
-}
-
-.topbar-left img {
-  height: 34px;
-  flex-shrink: 0;
-}
-
-.topbar-title {
-  font-size: 1rem;
-  font-weight: 900;
+.topbar h2 {
   color: var(--dark);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  font-size: 1.2rem;
 }
 
-/* Coluna central */
-.topbar-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.topbar select, .topbar button {
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  border-radius: 10px;
 }
 
-/* Coluna direita */
-.topbar-right {
+.topbar select {
+  border: 2px solid #e0e6ed;
+  background-color: #f8fafd;
+  font-weight: bold;
+  color: var(--dark);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.topbar select:focus { border-color: var(--primary); }
+
+.workspace-area {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  min-width: 0;
+  flex: 1;
+  height: calc(100vh - 60px);
+}
+
+#blocklyDiv {
+  flex: 1;
+  height: 100%;
+}
+
+/* Painel do Professor (Código C++) */
+.code-panel {
+  width: 350px;
+  min-width: 250px;
+  max-width: 50vw;
+  background-color: var(--dark);
+  border-left: 2px solid #1a252f;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  direction: rtl; 
+  resize: horizontal;
+  overflow: hidden; 
+}
+
+.code-panel > * {
+  direction: ltr; 
+}
+
+.code-panel h3 {
+  margin-bottom: 15px;
+  color: var(--secondary);
+  font-weight: 800;
+}
+
+pre {
+  background-color: #1e272e;
+  padding: 15px;
+  border-radius: 12px;
+  overflow-y: auto;
+  flex: 1;
+  color: #d2dae2;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  border: 1px solid #485460;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: var(--white) !important;
+  box-shadow: 0 6px 0px #d63031;
 }
 
 /* =========================================
-   HARDWARE CONTROLS (barra de pastilha)
+   BARRA DE HARDWARE (MEIO DA TOPBAR)
    ========================================= */
 .hardware-controls {
   display: flex;
@@ -208,7 +293,6 @@ button:active {
   padding: 4px 6px;
   gap: 4px;
   box-shadow: 0 4px 0px rgba(224, 230, 237, 0.6);
-  flex-wrap: nowrap;
 }
 
 .control-group {
@@ -216,34 +300,25 @@ button:active {
   align-items: center;
   background-color: #f4f7f6;
   border-radius: 100px;
-  padding: 4px 10px 4px 8px;
-  gap: 4px;
+  padding: 4px 12px 4px 10px;
+  gap: 5px;
 }
 
 .control-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-/* Label oculto em telas muito pequenas */
-.control-label {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #7f8c8d;
-  white-space: nowrap;
+  font-size: 1.1rem;
 }
 
 .hardware-controls select {
   background: transparent;
   border: none !important;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--dark);
   cursor: pointer;
   outline: none;
   padding: 0 !important;
   margin: 0 !important;
-  max-width: 110px;
+  height: auto;
 }
 
 .hardware-controls select:focus {
@@ -255,9 +330,8 @@ button:active {
   width: 2px;
   height: 20px;
   background-color: #e0e6ed;
-  margin: 0 2px;
+  margin: 0 4px;
   border-radius: 2px;
-  flex-shrink: 0;
 }
 
 .btn-icon {
@@ -272,206 +346,54 @@ button:active {
   cursor: pointer;
   transition: all 0.2s;
   height: auto !important;
-  font-size: 0.95rem;
 }
 
-.btn-icon:hover   { background-color: #dfe6e9; transform: rotate(45deg); }
-.btn-icon:active  { transform: rotate(90deg) scale(0.9); box-shadow: none; }
+.btn-icon:hover {
+  background-color: #dfe6e9;
+  transform: rotate(45deg);
+}
+
+.btn-icon:active {
+  transform: rotate(90deg) scale(0.9);
+  box-shadow: none;
+}
 
 .btn-action {
   border: none;
   border-radius: 100px !important;
-  padding: 7px 14px !important;
-  font-size: 0.9rem !important;
+  padding: 8px 16px !important;
+  font-size: 0.95rem !important;
   font-weight: 800 !important;
   cursor: pointer;
   transition: all 0.1s;
   color: white;
   margin: 0 !important;
   height: auto !important;
-  white-space: nowrap;
 }
 
-.btn-action:active { transform: translateY(4px); }
+.btn-action:active {
+  transform: translateY(4px);
+}
 
-.btn-send { background-color: var(--secondary); box-shadow: 0 4px 0px #3bac29; }
+.btn-send {
+  background-color: var(--secondary);
+  box-shadow: 0 4px 0px #3bac29;
+}
 .btn-send:active { box-shadow: 0 0px 0px #3bac29; }
 
-.btn-chat { background-color: #2c3e50; box-shadow: 0 4px 0px #1a252f; }
+.btn-chat {
+  background-color: #2c3e50;
+  box-shadow: 0 4px 0px #1a252f;
+}
 .btn-chat:active { box-shadow: 0 0px 0px #1a252f; }
 
-.btn-chat-active { background-color: var(--danger); box-shadow: 0 4px 0px #d63031; }
+.btn-chat-active {
+  background-color: var(--danger);
+  box-shadow: 0 4px 0px #d63031;
+}
 .btn-chat-active:active { box-shadow: 0 0px 0px #d63031; }
 
-/* Botões menores na topbar */
-.topbar-right button {
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  border-radius: 10px;
-}
-
-/* =========================================
-   WORKSPACE
-   ========================================= */
-.workspace-area {
-  display: flex;
-  flex: 1;
-  height: calc(100vh - var(--topbar-h));
-  overflow: hidden;
-}
-
-#blocklyDiv {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-}
-
-/*
- * Esconde o painel de categorias nativo do Blockly (.blocklyToolboxDiv)
- * e mantém apenas o flyout (lista de blocos), que é controlado
- * pela CompactToolbox via toolbox.selectItemByPosition().
- * O flyout continua funcional — apenas o menu lateral nativo some.
- */
-.blocklyToolboxDiv {
-  display: none !important;
-}
-
-/* Garante que o flyout parta da borda da compact-toolbox, não da borda da janela
-   O flyout já é posicionado relativo ao SVG do Blockly — nada mais precisa mudar */
-
-/* =========================================
-   COMPACT TOOLBOX SIDEBAR
-   ========================================= */
-.compact-toolbox {
-  width: 70px;
-  background: var(--dark);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 5px 10px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  flex-shrink: 0;
-  border-right: 2px solid #1e252d;
-  scrollbar-width: none;
-}
-
-.compact-toolbox::-webkit-scrollbar { display: none; }
-
-.ct-header {
-  font-size: 1.2rem;
-  padding: 6px 0 8px;
-  opacity: 0.4;
-  user-select: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  width: 100%;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.ct-btn {
-  width: 58px;
-  padding: 9px 4px 7px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid transparent;
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-  box-shadow: none;
-  transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.1s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  text-align: center;
-  position: relative;
-}
-
-.ct-btn:hover {
-  background: var(--cat-color);
-  color: #fff;
-  transform: none;
-  box-shadow: none;
-}
-
-.ct-btn:active {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-
-.ct-btn.ct-active {
-  background: var(--cat-active, var(--cat-color));
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.ct-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.ct-label {
-  font-size: 0.57rem;
-  font-weight: 800;
-  line-height: 1.2;
-  opacity: 0.95;
-  word-break: break-word;
-  hyphens: auto;
-}
-
-/* Indicador lateral quando ativo */
-.ct-indicator {
-  position: absolute;
-  right: -7px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 24px;
-  border-radius: 4px 0 0 4px;
-  background: #fff;
-  opacity: 0.7;
-}
-
-/* =========================================
-   CODE PANEL
-   ========================================= */
-.code-panel {
-  width: 340px;
-  min-width: 240px;
-  max-width: 50vw;
-  background-color: var(--dark);
-  border-left: 2px solid #1a252f;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  direction: rtl;
-  resize: horizontal;
-  overflow: hidden;
-}
-
-.code-panel > * { direction: ltr; }
-
-.code-panel h3 {
-  margin-bottom: 12px;
-  color: var(--secondary);
-  font-weight: 800;
-  font-size: 0.95rem;
-}
-
-pre {
-  background-color: #1e272e;
-  padding: 14px;
-  border-radius: 12px;
-  overflow-y: auto;
-  flex: 1;
-  color: #d2dae2;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.85rem;
-  border: 1px solid #485460;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
+/* --- TELA CHEIA DO CÓDIGO C++ --- */
 .code-panel.fullscreen {
   position: fixed;
   top: 0;
@@ -484,49 +406,6 @@ pre {
   direction: ltr;
 }
 
-.code-panel.fullscreen > * { direction: ltr; }
-
-/* =========================================
-   RESPONSIVIDADE
-   ========================================= */
-
-/* Telas médias: reduz hardware controls */
-@media (max-width: 1000px) {
-  .topbar-title { display: none; }
-
-  .hardware-controls select {
-    max-width: 80px;
-    font-size: 0.82rem;
-  }
-}
-
-/* Telas pequenas: esconde seletor de porta, compacta mais */
-@media (max-width: 780px) {
-  .topbar { grid-template-columns: auto auto 1fr; }
-
-  /* Esconde seletor de porta — mantém só placa + botões de ação */
-  .control-port-group { display: none; }
-  .control-divider.port-divider { display: none; }
-
-  .btn-action {
-    padding: 6px 10px !important;
-    font-size: 0.8rem !important;
-  }
-
-  .topbar-right button {
-    padding: 7px 10px;
-    font-size: 0.8rem;
-  }
-
-  /* Compact toolbox mais estreito */
-  .compact-toolbox { width: 58px; }
-  .ct-btn { width: 48px; font-size: 0.55rem; }
-  .ct-icon { font-size: 1.2rem; }
-}
-
-/* Telas muito pequenas: esconde label dos botões, mostra apenas ícones */
-@media (max-width: 580px) {
-  .btn-action-label { display: none; }
-  .btn-action { padding: 6px 8px !important; }
-  .topbar-right .btn-code-label { display: none; }
+.code-panel.fullscreen > * {
+  direction: ltr;
 }
