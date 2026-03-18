@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import logoSimples from '../assets/LogoSimples.png'; 
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import LZString from 'lz-string';
 
 Blockly.setLocale(PtBr as any);
 const cppGenerator = new Blockly.Generator('CPP');
@@ -20,15 +21,14 @@ const BOARDS = {
   uno:  { name: 'Arduino Uno',  pins: [['D2','2'],['D3 (PWM)','3'],['D4','4'],['D5 (PWM)','5'],['D6 (PWM)','6'],['D7','7'],['D8','8'],['D9 (PWM)','9'],['D10 (PWM)','10'],['D11 (PWM)','11'],['D12','12'],['D13 (LED Interno)','13']] },
   nano: { name: 'Arduino Nano', pins: [['D2','2'],['D3 (PWM)','3'],['D4','4'],['D5 (PWM)','5'],['D6 (PWM)','6'],['D7','7'],['D8','8'],['D9 (PWM)','9'],['D10 (PWM)','10'],['D11 (PWM)','11'],['D12','12'],['D13 (LED Interno)','13']] },
   esp32: { name: 'ESP32 DevKit V1', pins: [
-    // ── Uso geral (entrada e saída) ──────────────────────────────────────
-    ['GPIO 0  boot',   '0' ],
+    ['GPIO 0  ⚠️ boot',   '0' ],
     ['GPIO 2  (LED)',      '2' ], 
     ['GPIO 4',            '4' ],
-    ['GPIO 5  boot',   '5' ],
-    ['GPIO 12 boot',   '12'],
+    ['GPIO 5  ⚠️ boot',   '5' ],
+    ['GPIO 12 ⚠️ boot',   '12'],
     ['GPIO 13',           '13'],
     ['GPIO 14',           '14'],
-    ['GPIO 15 boot',   '15'],
+    ['GPIO 15 ⚠️ boot',   '15'],
     ['GPIO 16',           '16'],
     ['GPIO 17',           '17'],
     ['GPIO 18',           '18'],
@@ -41,7 +41,6 @@ const BOARDS = {
     ['GPIO 27',           '27'],
     ['GPIO 32',           '32'],
     ['GPIO 33',           '33'],
-    // ── Somente entrada (sem saída de sinal) ─────────────────────────────
     ['GPIO 34 (só leitura)', '34'],
     ['GPIO 35 (só leitura)', '35'],
     ['GPIO 36 (só leitura)', '36'],
@@ -161,131 +160,53 @@ function getFriendlyError(raw: string): FriendlyError {
   const e = raw.toLowerCase();
   const baseError = { rawError: raw };
 
-  // ── Erros de Download / Extração do CLI (Internet) ──
   if (e.includes('falha ao baixar') || e.includes('erro ao executar curl') || e.includes('tar') || e.includes('extração') || e.includes('plano b')) {
-    return { ...baseError,
-      emoji: '🌐', title: 'Problema na Internet!',
-      message: 'Não consegui baixar as ferramentas necessárias para preparar o código do robô.',
-      tip: 'Dica: Verifique a conexão com a internet do computador e tente novamente.',
-    };
+    return { ...baseError, emoji: '🌐', title: 'Problema na Internet!', message: 'Não consegui baixar as ferramentas necessárias para preparar o código do robô.', tip: 'Dica: Verifique a conexão com a internet do computador e tente novamente.' };
   }
-
-  // ── Erros de Instalação de Placas (Sem internet) ──
   if (e.includes('falha ao atualizar o index') || e.includes('update-index') || e.includes('erro ao instalar core')) {
-    return { ...baseError,
-      emoji: '📦', title: 'Faltam os pacotes da placa!',
-      message: 'O computador precisa baixar informações da placa pela primeira vez, mas a internet parece ter falhado.',
-      tip: 'Dica: Verifique a conexão com a internet. Essa etapa só acontece uma vez!',
-    };
+    return { ...baseError, emoji: '📦', title: 'Faltam os pacotes da placa!', message: 'O computador precisa baixar informações da placa pela primeira vez, mas a internet parece ter falhado.', tip: 'Dica: Verifique a conexão com a internet. Essa etapa só acontece uma vez!' };
   }
-
-  // ── Erros Específicos do ESP32 (URL injection) ──
   if (e.includes('esp32 no yaml') || e.includes('espressif') || e.includes('injeção da url')) {
-    return { ...baseError,
-      emoji: '🛠️', title: 'Erro ao configurar a placa ESP32!',
-      message: 'Ocorreu um problema ao tentar adicionar as configurações especiais da placa ESP32.',
-      tip: 'Dica: Chame o professor! Pode ser necessário checar as permissões do computador.',
-    };
+    return { ...baseError, emoji: '🛠️', title: 'Erro ao configurar a placa ESP32!', message: 'Ocorreu um problema ao tentar adicionar as configurações especiais da placa ESP32.', tip: 'Dica: Chame o professor! Pode ser necessário checar as permissões do computador.' };
   }
-
-  // ── Erros de Porta Ocupada / Acesso Negado ──
   if (e.includes('busy') || e.includes('em uso') || e.includes('acesso negado') || e.includes('access is denied') || e.includes('permission denied')) {
-    return { ...baseError,
-      emoji: '🚧', title: 'A porta USB está ocupada!',
-      message: 'Outro programa (ou o nosso Monitor Serial) já está usando esta porta para conversar com o robô.',
-      tip: 'Dica: Feche o Chat/Monitor clicando em "🛑 Parar" ou desconecte e reconecte o cabo USB!',
-    };
+    return { ...baseError, emoji: '🚧', title: 'A porta USB está ocupada!', message: 'Outro programa (ou o nosso Monitor Serial) já está usando esta porta para conversar com o robô.', tip: 'Dica: Feche o Chat/Monitor clicando em "🛑 Parar" ou desconecte e reconecte o cabo USB!' };
   }
-
-  // ── Erros de porta/USB (Não encontrada) ──
   if (e.includes('erro na porta') || e.includes('erro upload') || e.includes('could not open port') || e.includes('não foi possível abrir') || e.includes('no such file')) {
-    return { ...baseError,
-      emoji: '🔌', title: 'Cabo USB não encontrado!',
-      message: 'O computador não conseguiu encontrar o Arduino. Parece que o cabo USB está desconectado ou na porta errada.',
-      tip: 'Dica: Verifique se o cabo está bem encaixado e tente clicar em 🔄 para atualizar as portas!',
-    };
+    return { ...baseError, emoji: '🔌', title: 'Cabo USB não encontrado!', message: 'O computador não conseguiu encontrar o Arduino. Parece que o cabo USB está desconectado ou na porta errada.', tip: 'Dica: Verifique se o cabo está bem encaixado e tente clicar em 🔄 para atualizar as portas!' };
   }
-
-  // ── Erro de compilador não encontrado (arduino-cli ausente) ──
   if (e.includes('erro compilador') || e.includes('not found')) {
-    return { ...baseError,
-      emoji: '⚙️', title: 'Ferramenta ausente!',
-      message: 'O programa que converte os blocos para o robô não foi encontrado e o plano de download falhou.',
-      tip: 'Dica: Reinstale o OficinaCode ou chame o professor para verificar a instalação!',
-    };
+    return { ...baseError, emoji: '⚙️', title: 'Ferramenta ausente!', message: 'O programa que converte os blocos para o robô não foi encontrado e o plano de download falhou.', tip: 'Dica: Reinstale o OficinaCode ou chame o professor para verificar a instalação!' };
   }
-
-  // ── Erro de compilação do código gerado pelos blocos ──
   if (e.includes('erro no código') || e.includes('error:') || e.includes('syntax error') || e.includes('expected') || e.includes('undeclared') || e.includes('was not declared')) {
-    return { ...baseError,
-      emoji: '🧩', title: 'Hmm… algo está errado nas peças!',
-      message: 'O código gerado pelos blocos tem um probleminha. Às vezes isso acontece quando os blocos estão numa ordem estranha.',
-      tip: 'Dica: Tente remover a última peça que você colocou e montar de novo. Se não resolver, chame o professor!',
-    };
+    return { ...baseError, emoji: '🧩', title: 'Hmm… algo está errado nas peças!', message: 'O código gerado pelos blocos tem um probleminha. Às vezes isso acontece quando os blocos estão numa ordem estranha.', tip: 'Dica: Tente remover a última peça que você colocou e montar de novo. Se não resolver, chame o professor!' };
   }
-
-  // ── Erros de comunicação com a placa (avrdude) ──
   if (e.includes('avrdude') || e.includes('programmer') || e.includes('not in sync') || e.includes('out of sync') || e.includes('stk500')) {
-    return { ...baseError,
-      emoji: '😵', title: 'Não consegui falar com o Arduino!',
-      message: 'O computador conectou, mas a placa não respondeu corretamente. O modelo da placa pode estar errado.',
-      tip: 'Dica: Verifique se você escolheu a placa certa (Uno, Nano ou ESP32) no topo da tela!',
-    };
+    return { ...baseError, emoji: '😵', title: 'Não consegui falar com o Arduino!', message: 'O computador conectou, mas a placa não respondeu corretamente. O modelo da placa pode estar errado.', tip: 'Dica: Verifique se você escolheu a placa certa (Uno, Nano ou ESP32) no topo da tela!' };
   }
-
-  // ── Timeout ──
   if (e.includes('timeout') || e.includes('time out') || e.includes('timed out')) {
-    return { ...baseError,
-      emoji: '⏰', title: 'Demorou demais…',
-      message: 'O Arduino não respondeu a tempo. Às vezes isso acontece quando a conexão está instável.',
-      tip: 'Dica: Desconecte e reconecte o cabo USB e tente novamente!',
-    };
+    return { ...baseError, emoji: '⏰', title: 'Demorou demais…', message: 'O Arduino não respondeu a tempo. Às vezes isso acontece quando a conexão está instável.', tip: 'Dica: Desconecte e reconecte o cabo USB e tente novamente!' };
   }
-
-  // ── Fallback genérico ──
-  return { ...baseError,
-    emoji: '😕', title: 'Algo deu errado por aqui...',
-    message: 'Ocorreu um erro inesperado. Não se preocupe, isso acontece às vezes!',
-    tip: 'Dica: Tente de novo. Se o erro continuar, chame o professor para ajudar!',
-  };
+  return { ...baseError, emoji: '😕', title: 'Algo deu errado por aqui...', message: 'Ocorreu um erro inesperado. Não se preocupe, isso acontece às vezes!', tip: 'Dica: Tente de novo. Se o erro continuar, chame o professor para ajudar!' };
 }
 
-// Nomes humanos para tipos de bloco
 const BLOCK_NAMES: Record<string, string> = {
-  configurar_pino: 'Configurar Pino',
-  escrever_pino: 'Ligar/Desligar Pino',
-  esperar: 'Esperar',
-  repetir_vezes: 'Repetir Vezes',
-  escrever_serial: 'O Robô Diz',
-  ler_pino_digital: 'Ler Pino',
-  escrever_serial_valor: 'O Robô Diz o Valor',
-  se_entao: 'Se... Então',
-  se_entao_senao: 'Se... Então... Senão',
-  comparar_valores: 'Comparar',
-  numero_fixo: 'Número',
-  e_ou_logico: 'E / Ou',
-  configurar_ultrassonico: 'Configurar Sensor',
-  ler_distancia_cm: 'Ler Distância',
-  mostrar_distancia: 'Mostrar Distância',
-  objeto_esta_perto: 'Objeto Está Perto?',
+  configurar_pino: 'Configurar Pino', escrever_pino: 'Ligar/Desligar Pino', esperar: 'Esperar',
+  repetir_vezes: 'Repetir Vezes', escrever_serial: 'O Robô Diz', ler_pino_digital: 'Ler Pino',
+  escrever_serial_valor: 'O Robô Diz o Valor', se_entao: 'Se... Então', se_entao_senao: 'Se... Então... Senão',
+  comparar_valores: 'Comparar', numero_fixo: 'Número', e_ou_logico: 'E / Ou',
+  configurar_ultrassonico: 'Configurar Sensor', ler_distancia_cm: 'Ler Distância',
+  mostrar_distancia: 'Mostrar Distância', objeto_esta_perto: 'Objeto Está Perto?',
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tipos de estado de upload
-// ─────────────────────────────────────────────────────────────────────────────
 
 type UploadStage = 'validating' | 'compiling' | 'sending' | 'success';
 
 const UPLOAD_STAGES: { id: UploadStage; label: string; emoji: string; tip: string }[] = [
-  { id: 'validating', label: 'Verificando as peças…',    emoji: '🔍', tip: 'Checando se tudo está no lugar certo!' },
-  { id: 'compiling',  label: 'Compilando o código…',     emoji: '⚙️', tip: 'Transformando os blocos em linguagem de robô!' },
-  { id: 'sending',    label: 'Enviando para o robô…',    emoji: '📡', tip: 'O código está viajando pelo cabo USB agora!' },
-  { id: 'success',    label: 'Robô pronto para agir!',   emoji: '🤖', tip: 'Seu robô já está executando as instruções!' },
+  { id: 'validating', label: 'Verificando as peças…',  emoji: '🔍', tip: 'Checando se tudo está no lugar certo!' },
+  { id: 'compiling',  label: 'Compilando o código…',   emoji: '⚙️', tip: 'Transformando os blocos em linguagem de robô!' },
+  { id: 'sending',    label: 'Enviando para o robô…',  emoji: '📡', tip: 'O código está viajando pelo cabo USB agora!' },
+  { id: 'success',    label: 'Robô pronto para agir!', emoji: '🤖', tip: 'Seu robô já está executando as instruções!' },
 ];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Props
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface IdeScreenProps {
   role: 'student' | 'teacher' | 'visitor';
@@ -293,10 +214,6 @@ interface IdeScreenProps {
   onBack: () => void;
   projectId?: string;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Componente
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScreenProps) {
   const blocklyDiv   = useRef<HTMLDivElement>(null);
@@ -315,15 +232,14 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   const [isCodeVisible, setIsCodeVisible]       = useState(false);
   const [isFullscreenCode, setIsFullscreenCode] = useState(false);
 
-  // ── Novos estados de UI ───────────────────────────────────────────────────
   const [uploadStage, setUploadStage]           = useState<UploadStage | null>(null);
   const [friendlyError, setFriendlyError]       = useState<FriendlyError | null>(null);
-  const [showTechDetails, setShowTechDetails]   = useState(false); // NOVO ESTADO AQUI
+  const [showTechDetails, setShowTechDetails]   = useState(false);
   const [orphanWarning, setOrphanWarning]       = useState<string[]>([]);
   const isUploadingRef                          = useRef(false);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Tema Blockly melhorado
+  // Tema Blockly
   // ─────────────────────────────────────────────────────────────────────────
 
   const oficinaTheme = Blockly.Theme.defineTheme('oficinaTheme', {
@@ -358,7 +274,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   });
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Funções de utilidade
+  // Utilitários
   // ─────────────────────────────────────────────────────────────────────────
 
   const fetchPorts = async () => {
@@ -369,11 +285,9 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     } catch (error) { console.error(error); }
   };
 
-  /** Verifica blocos que não estão dentro de setup ou loop */
   const getOrphanedBlocks = (): string[] => {
     if (!workspace.current) return [];
-    const topBlocks = workspace.current.getTopBlocks(false);
-    return topBlocks
+    return workspace.current.getTopBlocks(false)
       .filter(b => b.type !== 'bloco_setup' && b.type !== 'bloco_loop')
       .map(b => BLOCK_NAMES[b.type] ?? b.type);
   };
@@ -386,6 +300,26 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
 
   useEffect(() => { currentBoardPins = BOARDS[board].pins; }, [board]);
   useEffect(() => { fetchPorts(); }, []);
+
+  // Escuta o resultado do upload vindo do backend (evento assíncrono)
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    (async () => {
+      unlisten = await listen<string>('upload-result', (event) => {
+        const payload = event.payload;
+        if (payload === 'ok') {
+          setUploadStage('success');
+        } else if (payload.startsWith('err:')) {
+          setUploadStage(null);
+          setFriendlyError(getFriendlyError(payload.slice(4)));
+        }
+        isUploadingRef.current = false;
+      });
+    })();
+
+    return () => { if (unlisten) unlisten(); };
+  }, []);
 
   useEffect(() => {
     if (blocklyDiv.current && !workspace.current) {
@@ -424,15 +358,13 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
             setProjectName(data.nome);
             if (data.target_board) setBoard(data.target_board as 'nano' | 'esp32' | 'uno');
             try {
-      if (data.workspace_data) {
-        const raw = typeof data.workspace_data === 'string'
-          ? JSON.parse(data.workspace_data) 
-          : data.workspace_data;
-          
-        if (raw && Object.keys(raw).length > 0) {
-          Blockly.serialization.workspaces.load(raw, workspace.current!);
-        }
-      }
+              if (data.workspace_data) {
+                const raw = typeof data.workspace_data === 'string'
+                  ? JSON.parse(LZString.decompress(data.workspace_data) || '{}')
+                  : data.workspace_data;
+                if (raw && Object.keys(raw).length > 0)
+                  Blockly.serialization.workspaces.load(raw, workspace.current!);
+              }
             } catch (_) {}
             ensureRootBlocks();
           }
@@ -446,7 +378,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [serialMessages, isSerialOpen]);
 
   useEffect(() => {
-    let unlisten: () => void;
+    let unlisten: (() => void) | undefined;
     (async () => {
       unlisten = await listen<string>('serial-message', (e) => {
         setSerialMessages(prev => {
@@ -472,11 +404,11 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   const handleSaveProject = async () => {
     if (!projectId || !workspace.current) return;
     setIsSaving(true);
-  const { error } = await supabase.from('projetos').update({
-    workspace_data: Blockly.serialization.workspaces.save(workspace.current),
-    target_board: board,
-    updated_at: new Date().toISOString()
-  }).eq('id', projectId);
+    const { error } = await supabase.from('projetos').update({
+      workspace_data: LZString.compress(JSON.stringify(Blockly.serialization.workspaces.save(workspace.current))),
+      target_board: board,
+      updated_at: new Date().toISOString()
+    }).eq('id', projectId);
     setIsSaving(false);
     if (!error) setSaveStatus('success');
     else { setFriendlyError({ emoji: '☁️', title: 'Não consegui salvar!', message: error.message, tip: 'Verifique sua conexão com a internet e tente de novo.', rawError: error.message }); }
@@ -495,8 +427,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     // 2. Verificar blocos raiz
     if (!generatedCode.includes('void setup()') || !generatedCode.includes('void loop()')) {
       setFriendlyError({
-        emoji: '🧩',
-        title: 'Faltam peças importantes!',
+        emoji: '🧩', title: 'Faltam peças importantes!',
         message: 'As peças PREPARAR e AGIR são obrigatórias para o robô funcionar.',
         tip: 'Dica: Mexa em uma peça e tente de novo para atualizar o código!',
         rawError: 'Missing setup() or loop() in generated code.'
@@ -507,33 +438,31 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     // 3. Fechar serial se estiver aberto
     if (isSerialOpen) { await invoke('stop_serial').catch(() => {}); setIsSerialOpen(false); }
 
-    // 4. Iniciar loading com estágios animados
+    // 4. Inicia loading — o backend retorna imediatamente e processa em background
     isUploadingRef.current = true;
     setUploadStage('validating');
 
-    try {
-      await delay(700);
-      setUploadStage('compiling');
+    // Avança os estágios visuais enquanto o backend processa em background.
+    // O estágio final ('success' ou erro) vem via evento 'upload-result'.
+    await delay(700);
+    if (!isUploadingRef.current) return; // upload cancelado
+    setUploadStage('compiling');
 
-      // Dispara o upload real em paralelo com a animação de estágios
-      const uploadPromise = invoke('upload_code', { codigo: generatedCode, placa: board, porta: port });
+    // Dispara o comando — retorna imediatamente ("iniciando")
+    invoke('upload_code', { codigo: generatedCode, placa: board, porta: port })
+      .catch((e) => {
+        // Erro de chamada (raro) — não de compilação/upload
+        setUploadStage(null);
+        setFriendlyError(getFriendlyError(String(e)));
+        isUploadingRef.current = false;
+      });
 
-      await delay(2500);
-      setUploadStage('sending');
-
-      // Aguarda o upload finalizar
-      await uploadPromise;
-
-      setUploadStage('success');
-    } catch (error) {
-      setUploadStage(null);
-      setFriendlyError(getFriendlyError(String(error)));
-    } finally {
-      isUploadingRef.current = false;
-    }
+    await delay(2500);
+    if (!isUploadingRef.current) return;
+    setUploadStage('sending');
+    // A partir daqui aguarda o evento 'upload-result' (escutado no useEffect acima)
   };
 
-  // Fechar o modal de erro e resetar o estado técnico
   const handleCloseError = () => {
     setFriendlyError(null);
     setShowTechDetails(false);
@@ -561,7 +490,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   return (
     <div className="app-container">
 
-      {/* ── BANNER MODO SOMENTE LEITURA ──────────────────────────────────── */}
       {readOnly && (
         <div className="readonly-banner">
           <span>👁️ Modo Visualização</span>
@@ -569,10 +497,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         </div>
       )}
 
-      {/* ── TOPBAR ───────────────────────────────────────────────────────── */}
       <div className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '15px' }}>
-
-        {/* Logo + título */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 'fit-content' }}>
           <img src={logoSimples} alt="Oficina Code" style={{ height: '34px' }} />
           {projectTitle && (
@@ -583,7 +508,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
           )}
         </div>
 
-        {/* Controles de hardware (centro) */}
         <div className="hardware-controls" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
           <div className="control-group">
             <span className="control-icon">🖥️</span>
@@ -622,7 +546,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
           )}
         </div>
 
-        {/* Botões da direita */}
         <div style={{ display: 'flex', gap: '10px' }}>
           {role !== 'student' && (
             <button className="btn-secondary topbar-btn" onClick={() => setIsCodeVisible(!isCodeVisible)}>
@@ -638,7 +561,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         </div>
       </div>
 
-      {/* ── WORKSPACE ────────────────────────────────────────────────────── */}
       <div className="workspace-area">
         <div ref={blocklyDiv} id="blocklyDiv" />
         {isCodeVisible && (
@@ -655,16 +577,11 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          MODAIS
-          ═══════════════════════════════════════════════════════════════════ */}
-
       {/* ── LOADING DE UPLOAD ─────────────────────────────────────────────── */}
       {uploadStage && (
         <div className="modal-overlay">
           <div className="upload-modal">
             {uploadStage === 'success' ? (
-              /* ─ Tela de sucesso ─ */
               <div className="upload-success-content">
                 <div className="success-robot">🤖</div>
                 <h2>Robô pronto!</h2>
@@ -674,23 +591,18 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
                 </button>
               </div>
             ) : (
-              /* ─ Tela de carregamento ─ */
               <>
                 <div className="upload-rocket-wrap">
                   <span className="upload-rocket">{currentStageData?.emoji}</span>
                 </div>
                 <h2 className="upload-stage-label">{currentStageData?.label}</h2>
                 <p className="upload-stage-tip">{currentStageData?.tip}</p>
-
-                {/* Barra de progresso */}
                 <div className="upload-progress-bar-track">
                   <div
                     className="upload-progress-bar-fill"
                     style={{ width: `${((stageIndex + 1) / (UPLOAD_STAGES.length - 1)) * 100}%` }}
                   />
                 </div>
-
-                {/* Etapas como pontos */}
                 <div className="upload-steps">
                   {UPLOAD_STAGES.filter(s => s.id !== 'success').map((s, i) => (
                     <div key={s.id} className={`upload-step ${i <= stageIndex ? 'active' : ''} ${i === stageIndex ? 'current' : ''}`}>
@@ -711,21 +623,12 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
           <div className="orphan-modal">
             <div className="orphan-icon">🧩</div>
             <h2>Tem peças soltas!</h2>
-            <p>
-              As peças abaixo estão flutuando no espaço e não estão conectadas a nenhuma função.
-              Para o robô executar, <strong>todas as peças precisam estar dentro de PREPARAR ou AGIR</strong>.
-            </p>
-
-            {/* Lista das peças soltas */}
+            <p>As peças abaixo estão flutuando no espaço e não estão conectadas a nenhuma função. Para o robô executar, <strong>todas as peças precisam estar dentro de PREPARAR ou AGIR</strong>.</p>
             <div className="orphan-blocks-list">
               {[...new Set(orphanWarning)].map((name, i) => (
-                <div key={i} className="orphan-block-chip">
-                  <span>🔷</span> {name}
-                </div>
+                <div key={i} className="orphan-block-chip"><span>🔷</span> {name}</div>
               ))}
             </div>
-
-            {/* Diagrama visual */}
             <div className="orphan-diagram">
               <div className="orphan-diagram-bad">
                 <span>❌</span>
@@ -740,20 +643,15 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
                 </div>
               </div>
             </div>
-
             <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-              <button className="btn-outline" style={{ flex: 1 }} onClick={() => setOrphanWarning([])}>
-                Vou corrigir! ✏️
-              </button>
-              <button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setOrphanWarning([]); /* força envio */ }}>
-                Enviar assim mesmo
-              </button>
+              <button className="btn-outline" style={{ flex: 1 }} onClick={() => setOrphanWarning([])}>Vou corrigir! ✏️</button>
+              <button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setOrphanWarning([]); }}>Enviar assim mesmo</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── ERRO AMIGÁVEL COM DETALHES TÉCNICOS ───────────────────────────── */}
+      {/* ── ERRO AMIGÁVEL ─────────────────────────────────────────────────── */}
       {friendlyError && (
         <div className="modal-overlay">
           <div className="friendly-error-modal">
@@ -764,14 +662,9 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
               <span>💡</span>
               <span>{friendlyError.tip}</span>
             </div>
-
             <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '10px' }}>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={handleCloseError}>
-                Entendi, vou tentar!
-              </button>
+              <button className="btn-primary" style={{ flex: 1 }} onClick={handleCloseError}>Entendi, vou tentar!</button>
             </div>
-
-            {/* Área do professor / Detalhes técnicos */}
             <div style={{ width: '100%', marginTop: '15px' }}>
               <button
                 className="btn-outline"
@@ -780,7 +673,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
               >
                 {showTechDetails ? 'Ocultar detalhes técnicos' : '🛠️ Ver detalhes técnicos (Professor)'}
               </button>
-
               {showTechDetails && (
                 <pre style={{ textAlign: 'left', backgroundColor: '#2d3436', color: '#ff7675', padding: '10px', borderRadius: '5px', fontSize: '0.75rem', marginTop: '10px', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto' }}>
                   {friendlyError.rawError}
@@ -836,9 +728,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
             <div ref={messagesEndRef} />
           </div>
           <div className="serial-monitor-footer">
-            <button className="serial-clear-btn" onClick={() => setSerialMessages([])}>
-              🗑️ Limpar
-            </button>
+            <button className="serial-clear-btn" onClick={() => setSerialMessages([])}>🗑️ Limpar</button>
             <span>{serialMessages.length} mensagens</span>
           </div>
         </div>
