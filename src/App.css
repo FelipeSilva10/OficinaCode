@@ -217,7 +217,7 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
   display: flex; align-items: center; background-color: var(--surface);
   border-radius: 70px; padding: 4px 12px 4px 10px; gap: 5px;
 }
-.control-icon { font-size: 1.1rem; }
+.control-icon { font-size: 0,8rem; }
 .hardware-controls select {
   background: transparent; border: none !important; font-size: 0.95rem; font-weight: 800;
   color: var(--dark); cursor: pointer; outline: none; padding: 0 !important; margin: 0 !important; height: auto;

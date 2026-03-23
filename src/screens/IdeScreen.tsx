@@ -82,19 +82,19 @@ const customBlocks = [
   { "type": "numero_fixo", "message0": "%1", "args0": [{ "type": "field_number", "name": "VALOR", "value": 10 }], "output": null, "colour": 210 },
   { "type": "e_ou_logico", "message0": "%1 %2 %3",
     "args0": [{ "type": "input_value", "name": "A", "check": "Boolean" },
-              { "type": "field_dropdown", "name": "OP", "options": [["E (as duas condições)","&&"],["OU (qualquer uma)","||"]] },
+              { "type": "field_dropdown", "name": "OP", "options": [["E","&&"],["OU","||"]] },
               { "type": "input_value", "name": "B", "check": "Boolean" }],
     "inputsInline": true, "output": "Boolean", "colour": 210 },
-  { "type": "configurar_ultrassonico", "message0": "Configurar sensor de distância: Gatilho %1 Eco %2",
+  { "type": "configurar_ultrassonico", "message0": "Configurar sensor de distância: Trigger %1 Echo %2",
     "args0": [{ "type": "field_dropdown", "name": "TRIG", "options": () => currentBoardPins }, { "type": "field_dropdown", "name": "ECHO", "options": () => currentBoardPins }],
     "previousStatement": null, "nextStatement": null, "colour": 40 },
-  { "type": "ler_distancia_cm", "message0": "Distância em cm (Gatilho %1 Eco %2)",
+  { "type": "ler_distancia_cm", "message0": "Distância em cm (Trigger %1 Echo %2)",
     "args0": [{ "type": "field_dropdown", "name": "TRIG", "options": () => currentBoardPins }, { "type": "field_dropdown", "name": "ECHO", "options": () => currentBoardPins }],
     "output": null, "colour": 40 },
-  { "type": "mostrar_distancia", "message0": "O robô diz a distância em cm (Gatilho %1 Eco %2)",
+  { "type": "mostrar_distancia", "message0": "O robô diz a distância em cm (Trigger %1 Echo %2)",
     "args0": [{ "type": "field_dropdown", "name": "TRIG", "options": () => currentBoardPins }, { "type": "field_dropdown", "name": "ECHO", "options": () => currentBoardPins }],
     "previousStatement": null, "nextStatement": null, "colour": 40 },
-  { "type": "objeto_esta_perto", "message0": "Tem objeto a menos de %1 cm? (Gatilho %2 Eco %3)",
+  { "type": "objeto_esta_perto", "message0": "Tem objeto a menos de %1 cm? (Trigger %2 Echo %3)",
     "args0": [{ "type": "field_number", "name": "CM", "value": 20, "min": 1 }, { "type": "field_dropdown", "name": "TRIG", "options": () => currentBoardPins }, { "type": "field_dropdown", "name": "ECHO", "options": () => currentBoardPins }],
     "output": "Boolean", "colour": 40 },
 ];
@@ -133,7 +133,7 @@ cppGenerator.forBlock['objeto_esta_perto']    = (b: Blockly.Block) => {
 const toolboxConfig = {
   kind: 'categoryToolbox',
   contents: [
-    { kind: 'category', name: '⚡ Pinos Digitais', colour: '230',
+    { kind: 'category', name: '⚡ Pinos', colour: '230',
       contents: [{ kind: 'block', type: 'configurar_pino' }, { kind: 'block', type: 'escrever_pino' }, { kind: 'block', type: 'ler_pino_digital' }] },
     { kind: 'category', name: '⏱️ Controle', colour: '120',
       contents: [{ kind: 'block', type: 'esperar' }, { kind: 'block', type: 'repetir_vezes' }] },
@@ -360,7 +360,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
             try {
               if (data.workspace_data) {
                 const raw = typeof data.workspace_data === 'string'
-                  ? JSON.parse(LZString.decompress(data.workspace_data) || '{}')
+                  ? JSON.parse(LZString.decompressFromBase64(data.workspace_data) || '{}')
                   : data.workspace_data;
                 if (raw && Object.keys(raw).length > 0)
                   Blockly.serialization.workspaces.load(raw, workspace.current!);
@@ -405,7 +405,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     if (!projectId || !workspace.current) return;
     setIsSaving(true);
     const { error } = await supabase.from('projetos').update({
-      workspace_data: LZString.compress(JSON.stringify(Blockly.serialization.workspaces.save(workspace.current))),
+    workspace_data: LZString.compressToBase64(JSON.stringify(Blockly.serialization.workspaces.save(workspace.current))),  
       target_board: board,
       updated_at: new Date().toISOString()
     }).eq('id', projectId);
@@ -510,7 +510,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
 
         <div className="hardware-controls" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
           <div className="control-group">
-            <span className="control-icon">🖥️</span>
+            <span className="control-icon">Placa: </span>
             <select value={board} onChange={(e) => setBoard(e.target.value as 'nano' | 'esp32' | 'uno')} disabled={readOnly}>
               <option value="uno">Uno</option>
               <option value="nano">Nano</option>
@@ -519,7 +519,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
           </div>
           <div className="control-divider" />
           <div className="control-group">
-            <span className="control-icon">🔌</span>
+            <span className="control-icon">Porta: </span>
             <select value={port} onChange={(e) => setPort(e.target.value)}>
               {availablePorts.length === 0
                 ? <option value="">Conecte o cabo…</option>
@@ -549,7 +549,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         <div style={{ display: 'flex', gap: '10px' }}>
           {role !== 'student' && (
             <button className="btn-secondary topbar-btn" onClick={() => setIsCodeVisible(!isCodeVisible)}>
-              {isCodeVisible ? '🙈 Ocultar Código' : '💻 Ver Código'}
+              {isCodeVisible ? '🙈 Ocultar Código' : 'Ver Código'}
             </button>
           )}
           {(role === 'student' || (role === 'teacher' && !readOnly)) && projectId && (
@@ -557,7 +557,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
               {isSaving ? '⏳ Salvando…' : '💾 Salvar'}
             </button>
           )}
-          <button className="btn-danger topbar-btn" onClick={onBack}>← Sair</button>
+          <button className="btn-danger topbar-btn" onClick={onBack}>Sair</button>
         </div>
       </div>
 
