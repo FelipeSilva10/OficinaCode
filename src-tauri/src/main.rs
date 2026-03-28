@@ -378,16 +378,22 @@ fn get_available_ports() -> Result<Vec<String>, String> {
 /// A janela só pode ser aberta por professores — a verificação de role
 /// é feita no frontend antes de chamar este comando.
 #[tauri::command]
-fn open_admin_panel(
+async fn open_admin_panel(
     app: tauri::AppHandle,
     access_token: String,
     refresh_token: String,
 ) -> Result<String, String> {
-    // URL base do OficinaAdmin (altere se for deploy em outro domínio)
+    use tauri::Manager; // Importação necessária para usar o get_webview_window
+
+    // 1. Verifica se a janela já existe. Se sim, apenas foca nela para não travar.
+    if let Some(window) = app.get_webview_window("admin-panel") {
+        window.set_focus().map_err(|e| format!("Erro ao focar a janela: {}", e))?;
+        return Ok("ok".to_string());
+    }
+
+    // 2. Cria a janela apenas se ela não existir
     let admin_base_url = "https://oficinaadmin.vercel.app";
 
-    // Monta a URL com os tokens como query params.
-    // O site admin vai ler ?access_token=...&refresh_token=... e chamar setSession().
     let url = format!(
         "{}/auto-login?access_token={}&refresh_token={}",
         admin_base_url,
@@ -395,11 +401,11 @@ fn open_admin_panel(
         urlencoding::encode(&refresh_token),
     );
 
-    let webview_url = WebviewUrl::External(
+    let webview_url = tauri::WebviewUrl::External(
         url.parse().map_err(|e| format!("URL inválida: {}", e))?
     );
 
-    WebviewWindowBuilder::new(&app, "admin-panel", webview_url)
+    tauri::WebviewWindowBuilder::new(&app, "admin-panel", webview_url)
         .title("OficinaAdmin — Painel de Gestão")
         .inner_size(1280.0, 800.0)
         .min_inner_size(900.0, 600.0)
