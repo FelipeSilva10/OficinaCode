@@ -138,6 +138,7 @@ body, html, #root {
 .login-form input:focus {
   outline: none; border-color: var(--primary); background-color: #fff;
   box-shadow: 0 0 0 4px rgba(0, 168, 255, 0.15); transform: translateY(-2px);
+
 }
 
 /* ═══════════════════════════════════════════════════
@@ -165,6 +166,43 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
 
 /* Botões reduzidos da topbar */
 .topbar-btn { padding: 8px 14px !important; font-size: 0.9rem !important; border-radius: 10px !important; }
+
+/* ── Botão de toggle de senha (Login) ── */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+
+.btn-toggle-password {
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 400;
+  box-shadow: none;
+  background: none;
+  border: none;
+  transition: none;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.btn-toggle-password:hover { color: var(--dark); }
+.btn-toggle-password:active { transform: scale(0.9); box-shadow: none; }
 
 /* ═══════════════════════════════════════════════════
    LAYOUT PRINCIPAL
@@ -219,19 +257,21 @@ button:disabled:active { transform: none; box-shadow: 0 6px 0px rgba(0,0,0,0.2);
 }
 .control-icon { font-size: 0,8rem; }
 .hardware-controls select {
-  background: transparent; border: none !important; font-size: 0.95rem; font-weight: 800;
+  background: transparent; border: none !important; font-size: 0.95rem; font-weight: 700;
   color: var(--dark); cursor: pointer; outline: none; padding: 0 !important; margin: 0 !important; height: auto;
 }
 .hardware-controls select:focus { border: none !important; box-shadow: none !important; }
-.control-divider { width: 2px; height: 20px; background-color: var(--border); margin: 0 4px; border-radius: 2px; }
+.control-divider { width: 3px; height: 20px; background-color: var(--border); margin: 0 10px; border-radius: 2px; }
 
 .btn-icon {
-  background: transparent; border: none; box-shadow: none; padding: 4px; border-radius: 50%;
+  background: transparent; border: none; box-shadow: none; padding: 4px; border-radius: 100%;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
   transition: all 0.2s; height: auto !important;
+  font-size: 1.1rem;
 }
-.btn-icon:hover { background-color: #dfe6e9; transform: rotate(45deg); }
-.btn-icon:active { transform: rotate(90deg) scale(0.9); box-shadow: none; }
+
+.btn-icon:hover { background-color: #e3e9eb;}
+.btn-icon:active { transform: scale(0.8); box-shadow: none; }
 
 .btn-action {
   border: none; border-radius: 100px !important; padding: 8px 16px !important;

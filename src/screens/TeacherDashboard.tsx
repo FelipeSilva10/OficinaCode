@@ -160,7 +160,7 @@ export function TeacherDashboard({ onLogout, onOpenOwnProject, onInspectStudentP
               disabled={adminLoading}
               style={{
                 padding: '10px 20px',
-                background: adminLoading ? '#b2bec3' : 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
+                background: adminLoading ? '#b2bec3' : 'linear-gradient(135deg, #6c5ce7)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
@@ -171,10 +171,10 @@ export function TeacherDashboard({ onLogout, onOpenOwnProject, onInspectStudentP
                 transition: 'all 0.15s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '12px',
               }}
             >
-              {adminLoading ? '⏳' : '🏫'} {adminLoading ? 'Abrindo…' : 'Painel Admin'}
+              {adminLoading ? '' : ''} {adminLoading ? 'Abrindo…' : 'Painel Admin'}
             </button>
             {adminError && (
               <span style={{ fontSize: '0.75rem', color: '#e17055', fontWeight: 700, maxWidth: '200px', textAlign: 'right' }}>

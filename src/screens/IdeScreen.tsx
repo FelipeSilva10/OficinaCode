@@ -210,7 +210,7 @@ function BoardSelectionModal({ onSelect }: BoardSelectionModalProps) {
   const [hovered, setHovered] = useState<BoardKey | null>(null);
   const boards: { key: BoardKey; title: string; color: string; img: string }[] = [
     { key: 'uno',   title: 'Arduino Uno',  color: '#0984e3', img: 'public/arduino_uno.jpg' },
-    { key: 'nano',  title: 'Arduino Nano', color: '#6c5ce7', img: 'public/arduino_nano.jpg' },
+    { key: 'nano',  title: 'Arduino Nano', color: '#ff00d0', img: 'public/arduino_nano.jpg' },
     { key: 'esp32', title: 'ESP32 DevKit', color: '#e17055', img: 'public/esp32_devkit_v1.jpg' },
   ];
 
@@ -245,7 +245,7 @@ function BoardSelectionModal({ onSelect }: BoardSelectionModalProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BoardBadge({ boardKey }: { boardKey: BoardKey }) {
-  const colorMap: Record<BoardKey, string> = { uno: '#0984e3', nano: '#6c5ce7', esp32: '#e17055' };
+  const colorMap: Record<BoardKey, string> = { uno: '#0984e3', nano: '#ff00d0', esp32: '#e17055' };
   const color = colorMap[boardKey];
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: `${color}15`, border: `2px solid ${color}55`, borderRadius: 100, padding: '4px 14px 4px 10px', fontWeight: 900, fontSize: '0.9rem', color, userSelect: 'none' }}>
@@ -557,7 +557,7 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
 
       {readOnly && (
         <div className="readonly-banner">
-          <span>👁️ Modo Visualização</span>
+          <span>Modo Visualização</span>
           <span>Você está vendo o projeto de um aluno. Edição desativada.</span>
         </div>
       )}
@@ -578,11 +578,10 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
           {boardLoadState === 'ready' && board && <BoardBadge boardKey={board} />}
           <div className="control-divider" />
           <div className="control-group">
-            <span className="control-icon">Porta: </span>
             <select value={port} onChange={(e) => setPort(e.target.value)}>
-              {availablePorts.length === 0 ? <option value="">Conecte o cabo…</option> : availablePorts.map(p => <option key={p} value={p}>{p}</option>)}
+              {availablePorts.length === 0 ? <option value="">Selecione uma placa</option> : availablePorts.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
-            <button onClick={fetchPorts} className="btn-icon" title="Atualizar portas">🔄</button>
+              <button onClick={fetchPorts} className="btn-icon" title="Atualizar porta"> ↻ </button>
           </div>
           <div className="control-divider" />
           {!readOnly && (

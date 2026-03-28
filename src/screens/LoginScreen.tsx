@@ -10,6 +10,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [view, setView] = useState<'options' | 'student' | 'teacher'>('options');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -55,12 +56,26 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <div className="login-form">
             <h3>{view === 'student' ? 'Aluno' : 'Professor'}</h3>
             <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-            <input type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="password-wrapper">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Senha"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+            <button
+              className="btn-toggle-password"
+              onClick={() => setShowPassword(v => !v)}
+              title={showPassword ? 'Ocultar senha' : 'Ver senha'}
+            >
+              {showPassword ? '🙈' : '👀'}
+            </button>
+          </div>
             {error && <p style={{ color: 'var(--danger)', fontWeight: 700 }}>{error}</p>}
             <button className="btn-primary" onClick={handleLogin} disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? 'Entrando' : 'Entrar'}
             </button>
-            <button className="btn-text" onClick={() => setView('options')}>← Voltar</button>
+            <button className="btn-text" onClick={() => setView('options')}>Voltar</button>
           </div>
         )}
       </div>
