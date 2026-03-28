@@ -384,7 +384,7 @@ fn open_admin_panel(
     refresh_token: String,
 ) -> Result<String, String> {
     // URL base do OficinaAdmin (altere se for deploy em outro domínio)
-    let admin_base_url = "https://oficina-admin-web.vercel.app";
+    let admin_base_url = "https://oficinaadmin.vercel.app";
 
     // Monta a URL com os tokens como query params.
     // O site admin vai ler ?access_token=...&refresh_token=... e chamar setSession().
