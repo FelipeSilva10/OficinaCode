@@ -1,32 +1,26 @@
 name: Build Alpha
-
 on:
   push:
     branches:
       - Version1
-
 jobs:
   # ──────────────────────────────────────────────────────────────────────────────
   # BUILD WINDOWS (.exe via NSIS)
   # ──────────────────────────────────────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Instalar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Instalar Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Instalar dependências npm
         run: npm install
-
       - name: Baixar arduino-cli (Windows)
+        shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path src-tauri/resources/
           if (Test-Path src-tauri/resources/arduino-cli.exe) {
@@ -37,11 +31,8 @@ jobs:
             -OutFile arduino-cli.zip
           Expand-Archive arduino-cli.zip -DestinationPath src-tauri/resources/ -Force
           Remove-Item arduino-cli.zip
-        shell: powershell
-
       - name: Build Tauri (Windows)
         run: npm run tauri build
-
       - name: Upload instalador Windows
         uses: actions/upload-artifact@v4
         with:
@@ -55,7 +46,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
-
     steps:
       - name: Instalar dependências do Arch
         run: |
@@ -72,12 +62,9 @@ jobs:
             rust \
             cargo \
             xdg-utils
-
       - uses: actions/checkout@v4
-
       - name: Instalar dependências npm
         run: npm install
-
       - name: Baixar arduino-cli (Linux x86_64)
         run: |
           mkdir -p src-tauri/resources/
@@ -87,10 +74,10 @@ jobs:
           tar -xzf arduino-cli.tar.gz -C src-tauri/resources/
           chmod +x src-tauri/resources/arduino-cli
           rm arduino-cli.tar.gz
-
       - name: Build Tauri (Arch)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: npm run tauri build
-
       - name: Upload AppImage (Arch)
         uses: actions/upload-artifact@v4
         with:
