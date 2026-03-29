@@ -383,7 +383,7 @@ async fn open_admin_panel(
     }
 
     // 2. Cria a janela apenas se ela não existir
-    let admin_base_url = "https://bloquinadmin.vercel.app";
+    let admin_base_url = "https://oficinaadmin.vercel.app";
 
     let url = format!(
         "{}/auto-login?access_token={}&refresh_token={}",

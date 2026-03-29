@@ -229,9 +229,9 @@ function BoardSelectionModal({ onSelect }: BoardSelectionModalProps) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'row', gap: 16, width: '100%', justifyContent: 'center' }}>
           {boards.map(({ key, title, color, img }) => (
-            <button key={key} onMouseEnter={() => setHovered(key)} onMouseLeave={() => setHovered(null)} onClick={() => onSelect(key)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '18px 16px 14px', borderRadius: 20, border: `3px solid ${hovered === key ? color : '#e0e6ed'}`, background: hovered === key ? `${color}11` : '#f8fafd', cursor: 'pointer', boxShadow: hovered === key ? `0 8px 24px ${color}44` : '0 2px 8px rgba(0,0,0,0.06)', transform: hovered === key ? 'translateY(-4px) scale(1.03)' : 'none', transition: 'all 0.18s ease', flex: 1, minWidth: 0, outline: 'none' }}>
-              <div style={{ width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden', background: '#eef2f7', border: `2px solid ${hovered === key ? color + '55' : '#e0e6ed'}`, transition: 'border-color 0.18s ease', flexShrink: 0 }}>
+              <button key={key} onMouseEnter={() => setHovered(key)} onMouseLeave={() => setHovered(null)} onClick={() => onSelect(key)}
+              style={{ background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '18px 16px 14px', borderRadius: 20, cursor: 'pointer', boxShadow: hovered === key ? `0 8px 24px ${color}44` : '0 2px 8px rgba(0,0,0,0.06)', transform: hovered === key ? 'translateY(-4px) scale(1.03)' : 'none', transition: 'all 0.18s ease', flex: 1, minWidth: 0, outline: 'none' }}>
+              <div style={{ width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
                 <img src={img} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.25s ease', transform: hovered === key ? 'scale(1.06)' : 'scale(1)' }} />
               </div>
               <span style={{ color: hovered === key ? color : '#2f3542', fontWeight: 900, fontSize: '1rem', transition: 'color 0.18s ease', lineHeight: 1.2 }}>{title}</span>
