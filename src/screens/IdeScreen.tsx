@@ -114,7 +114,7 @@ const customBlocks = [
 
   // ── CONTROLE AVANÇADO ──────────────────────────────────────────────────────
   { type: 'enquanto_verdadeiro', colour: 120, message0: 'Enquanto %1 fizer %2 %3', args0: [{ type: 'input_value', name: 'CONDICAO', check: 'Boolean' }, { type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], previousStatement: null, nextStatement: null, tooltip: 'Repete o bloco enquanto a condição for verdadeira.' },
-  { type: 'parar_repeticao', colour: 120, message0: '⛔ Parar de repetir (break)', args0: [], previousStatement: null, nextStatement: null, tooltip: 'Sai imediatamente do loop atual (repetir_vezes ou enquanto).' },
+  { type: 'parar_repeticao', colour: 120, message0: '⛔ Parar de repetir (break)', args0: [], previousStatement: null, nextStatement: null, tooltip: 'Sai imediatamente do loop atual.' },
 
   // ── MATEMÁTICA ─────────────────────────────────────────────────────────────
   { type: 'operacao_matematica', colour: 200, message0: '%1 %2 %3', args0: [{ type: 'input_value', name: 'A' }, { type: 'field_dropdown', name: 'OP', options: [['+ soma', '+'], ['− subtração', '-'], ['× multiplicação', '*'], ['÷ divisão', '/'], ['% resto', '%']] }, { type: 'input_value', name: 'B' }], inputsInline: true, output: null, tooltip: 'Operação matemática entre dois valores.' },
@@ -124,15 +124,13 @@ const customBlocks = [
   { type: 'millis_atual', colour: 200, message0: 'Tempo ligado (ms)', args0: [], output: null, tooltip: 'Retorna milissegundos desde o início. Útil para temporização sem travar com delay.' },
 
   // ── VARIÁVEIS GLOBAIS ──────────────────────────────────────────────────────
-  // Sem prev/next — flutua solto no workspace como declaração global
   { type: 'declarar_variavel_global', colour: 330, message0: '📦 Variável %1 %2 = %3', args0: [{ type: 'field_dropdown', name: 'TIPO', options: [['inteiro (int)', 'int'], ['decimal (float)', 'float'], ['bool (true/false)', 'bool']] }, { type: 'field_input', name: 'NOME', text: 'minha_var' }, { type: 'input_value', name: 'VALOR' }], tooltip: 'Declara uma variável global. Deixe solto no workspace, fora de qualquer bloco.' },
-  { type: 'atribuir_variavel', colour: 330, message0: 'Guardar em %1 o valor %2', args0: [{ type: 'field_input', name: 'NOME', text: 'minha_var' }, { type: 'input_value', name: 'VALOR' }], inputsInline: true, previousStatement: null, nextStatement: null, tooltip: 'Atribui um novo valor à variável. O nome deve ser igual ao da declaração.' },
+  { type: 'atribuir_variavel', colour: 330, message0: 'Guardar em %1 o valor %2', args0: [{ type: 'field_input', name: 'NOME', text: 'minha_var' }, { type: 'input_value', name: 'VALOR' }], inputsInline: true, previousStatement: null, nextStatement: null, tooltip: 'Atribui um novo valor à variável.' },
   { type: 'ler_variavel', colour: 330, message0: 'variável %1', args0: [{ type: 'field_input', name: 'NOME', text: 'minha_var' }], output: null, tooltip: 'Lê o valor atual de uma variável.' },
-  { type: 'incrementar_variavel', colour: 330, message0: 'Aumentar %1 em %2', args0: [{ type: 'field_input', name: 'NOME', text: 'contador' }, { type: 'input_value', name: 'VALOR' }], inputsInline: true, previousStatement: null, nextStatement: null, tooltip: 'Soma um valor à variável (equivale a: contador += 1).' },
+  { type: 'incrementar_variavel', colour: 330, message0: 'Aumentar %1 em %2', args0: [{ type: 'field_input', name: 'NOME', text: 'contador' }, { type: 'input_value', name: 'VALOR' }], inputsInline: true, previousStatement: null, nextStatement: null, tooltip: 'Soma um valor à variável.' },
 
   // ── FUNÇÕES ────────────────────────────────────────────────────────────────
-  // Sem prev/next — flutua solto no workspace como definição de função
-  { type: 'definir_funcao', colour: 270, message0: '⚡ Função %1 %2 %3', args0: [{ type: 'field_input', name: 'NOME', text: 'minhaFuncao' }, { type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], tooltip: 'Cria uma função reutilizável. Deixe solto no workspace e chame-a com "Executar função".' },
+  { type: 'definir_funcao', colour: 270, message0: '⚡ Função %1 %2 %3', args0: [{ type: 'field_input', name: 'NOME', text: 'minhaFuncao' }, { type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], tooltip: 'Cria uma função reutilizável.' },
   { type: 'chamar_funcao', colour: 270, message0: 'Executar função %1', args0: [{ type: 'field_input', name: 'NOME', text: 'minhaFuncao' }], previousStatement: null, nextStatement: null, tooltip: 'Chama e executa uma função definida no workspace.' },
 
   // ── SERVO MOTOR ────────────────────────────────────────────────────────────
@@ -141,9 +139,202 @@ const customBlocks = [
   { type: 'servo_ler', colour: 170, message0: 'Posição atual do servo (pino %1)', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }], output: null, tooltip: 'Retorna o ângulo atual do servo (0 a 180).' },
 
   // ── BUZZER / SOM ───────────────────────────────────────────────────────────
-  { type: 'buzzer_tocar', colour: 50, message0: '🔊 Tocar som: pino %1 frequência %2 Hz', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }, { type: 'field_number', name: 'FREQ', value: 440, min: 31, max: 65535 }], previousStatement: null, nextStatement: null, tooltip: 'Toca um som contínuo no buzzer/piezo. Use "Parar som" para encerrar.' },
-  { type: 'buzzer_tocar_tempo', colour: 50, message0: '🔊 Tocar som: pino %1 frequência %2 Hz por %3 ms', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }, { type: 'field_number', name: 'FREQ', value: 440, min: 31 }, { type: 'field_number', name: 'DUR', value: 500, min: 1 }], previousStatement: null, nextStatement: null, tooltip: 'Toca um som por um tempo determinado (em milissegundos).' },
-  { type: 'buzzer_parar', colour: 50, message0: '🔇 Parar som no pino %1', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }], previousStatement: null, nextStatement: null, tooltip: 'Para o som do buzzer/piezo naquele pino.' },
+  { type: 'buzzer_tocar', colour: 50, message0: '🔊 Tocar som: pino %1 frequência %2 Hz', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }, { type: 'field_number', name: 'FREQ', value: 440, min: 31, max: 65535 }], previousStatement: null, nextStatement: null, tooltip: 'Toca um som contínuo no buzzer/piezo.' },
+  { type: 'buzzer_tocar_tempo', colour: 50, message0: '🔊 Tocar som: pino %1 frequência %2 Hz por %3 ms', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }, { type: 'field_number', name: 'FREQ', value: 440, min: 31 }, { type: 'field_number', name: 'DUR', value: 500, min: 1 }], previousStatement: null, nextStatement: null, tooltip: 'Toca um som por um tempo determinado.' },
+  { type: 'buzzer_parar', colour: 50, message0: '🔇 Parar som no pino %1', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }], previousStatement: null, nextStatement: null, tooltip: 'Para o som do buzzer/piezo.' },
+
+  // ── ESP-NOW COMUM ──────────────────────────────────────────────────────────
+  {
+    type: 'espnow_iniciar_wifi', colour: 70,
+    message0: '📶 Iniciar Wi-Fi em modo estação (ESP-NOW)',
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Liga o Wi-Fi em modo STA. Obrigatório antes de usar ESP-NOW.',
+  },
+  {
+    type: 'espnow_mac_serial', colour: 70,
+    message0: '📋 Mostrar MAC address no Serial',
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Imprime no Serial o MAC deste ESP32. Use para descobrir o endereço do receptor.',
+  },
+
+  // ── ESP-NOW TRANSMISSOR (LUVA) ─────────────────────────────────────────────
+  {
+    type: 'espnow_transmissor_init', colour: 70,
+    message0: '📡 Iniciar ESP-NOW como TRANSMISSOR',
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Inicializa o ESP-NOW para enviar dados. Coloque no PREPARAR após iniciar Wi-Fi.',
+  },
+  {
+    type: 'espnow_adicionar_receptor', colour: 70,
+    message0: '🔗 Adicionar receptor com MAC %1',
+    args0: [{ type: 'field_input', name: 'MAC', text: 'AA:BB:CC:DD:EE:FF' }],
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Registra o MAC do receptor (carrinho). Descubra o MAC rodando "Mostrar MAC no Serial" no carrinho.',
+  },
+  {
+    type: 'espnow_enviar_pacote', colour: 70,
+    message0: 'Enviar pacote: pitch %1 roll %2 parar %3',
+    args0: [
+      { type: 'input_value', name: 'PITCH' },
+      { type: 'input_value', name: 'ROLL' },
+      { type: 'input_value', name: 'PARAR', check: 'Boolean' },
+    ],
+    inputsInline: true,
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Envia pitch, roll e flag de parada via ESP-NOW para o receptor.',
+  },
+
+  // ── ESP-NOW RECEPTOR (CARRINHO) ────────────────────────────────────────────
+  {
+    type: 'espnow_receptor_init', colour: 70,
+    message0: '📡 Iniciar ESP-NOW como RECEPTOR',
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Inicializa o ESP-NOW para receber dados. Coloque no PREPARAR após iniciar Wi-Fi.',
+  },
+  {
+    type: 'espnow_tem_dados_novos', colour: 70,
+    message0: 'Chegou novo pacote ESP-NOW?',
+    output: 'Boolean',
+    tooltip: 'Verdadeiro se um novo pacote ESP-NOW foi recebido e ainda não foi processado.',
+  },
+  {
+    type: 'espnow_ler_pitch', colour: 70,
+    message0: 'Pitch recebido (graus)',
+    output: null,
+    tooltip: 'Retorna o ângulo de inclinação frente/trás do último pacote recebido.',
+  },
+  {
+    type: 'espnow_ler_roll', colour: 70,
+    message0: 'Roll recebido (graus)',
+    output: null,
+    tooltip: 'Retorna o ângulo de inclinação esquerda/direita do último pacote recebido.',
+  },
+  {
+    type: 'espnow_ler_flag_parar', colour: 70,
+    message0: 'Flag "parar" recebido?',
+    output: 'Boolean',
+    tooltip: 'Verdadeiro se o transmissor enviou o comando de parada.',
+  },
+  {
+    type: 'espnow_timeout_ms', colour: 70,
+    message0: 'Sem pacote por mais de %1 ms?',
+    args0: [{ type: 'field_number', name: 'MS', value: 600, min: 100 }],
+    output: 'Boolean',
+    tooltip: 'Verdadeiro se nenhum pacote foi recebido dentro do tempo limite. Use para parar o carrinho em caso de perda de sinal.',
+  },
+
+  // ── MPU-6050 ───────────────────────────────────────────────────────────────
+  {
+    type: 'mpu_iniciar', colour: 310,
+    message0: '🧭 Iniciar MPU-6050 (SDA %1 SCL %2)',
+    args0: [
+      { type: 'field_dropdown', name: 'SDA', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'SCL', options: () => currentBoardPins },
+    ],
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Inicializa o acelerômetro/giroscópio MPU-6050 via I2C. Coloque no PREPARAR.',
+  },
+  {
+    type: 'mpu_ler_pitch', colour: 310,
+    message0: '🧭 Ler Pitch do MPU-6050 (graus)',
+    output: null,
+    tooltip: 'Retorna o ângulo de inclinação frente/trás (pitch) em graus.',
+  },
+  {
+    type: 'mpu_ler_roll', colour: 310,
+    message0: '🧭 Ler Roll do MPU-6050 (graus)',
+    output: null,
+    tooltip: 'Retorna o ângulo de inclinação esquerda/direita (roll) em graus.',
+  },
+
+  // ── PONTE H L298N ──────────────────────────────────────────────────────────
+  {
+    type: 'l298n_configurar', colour: 0,
+    message0: '🚗 Configurar Ponte H: ENA %1 IN1 %2 IN2 %3 IN3 %4 IN4 %5 ENB %6',
+    args0: [
+      { type: 'field_dropdown', name: 'ENA', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'IN1', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'IN2', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'IN3', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'IN4', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'ENB', options: () => currentBoardPins },
+    ],
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Configura todos os pinos da Ponte H L298N como saída e trava os motores na inicialização.',
+  },
+  {
+    type: 'l298n_pwm_configurar', colour: 0,
+    message0: '⚡ Configurar PWM LEDC: ENA %1 ENB %2',
+    args0: [
+      { type: 'field_dropdown', name: 'ENA', options: () => currentBoardPins },
+      { type: 'field_dropdown', name: 'ENB', options: () => currentBoardPins },
+    ],
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Configura o PWM (LEDC) do ESP32 para controlar a velocidade dos motores. Coloque após "Configurar Ponte H".',
+  },
+  {
+    type: 'l298n_motor_esquerdo', colour: 0,
+    message0: '🚗 Motor esquerdo: %1 (-255 a 255)',
+    args0: [{ type: 'input_value', name: 'VALOR' }],
+    inputsInline: true,
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Positivo = frente, negativo = ré, 0 = parado.',
+  },
+  {
+    type: 'l298n_motor_direito', colour: 0,
+    message0: '🚗 Motor direito: %1 (-255 a 255)',
+    args0: [{ type: 'input_value', name: 'VALOR' }],
+    inputsInline: true,
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Positivo = frente, negativo = ré, 0 = parado.',
+  },
+  {
+    type: 'l298n_parar_motores', colour: 0,
+    message0: '⛔ Parar ambos os motores',
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Para os dois motores imediatamente.',
+  },
+  {
+    type: 'l298n_velocidade_por_pitch_roll', colour: 0,
+    message0: '🚗 Controlar motores por pitch %1 roll %2 zona_pitch %3 zona_roll %4',
+    args0: [
+      { type: 'input_value', name: 'PITCH' },
+      { type: 'input_value', name: 'ROLL' },
+      { type: 'field_number', name: 'ZONA_P', value: 10, min: 0 },
+      { type: 'field_number', name: 'ZONA_R', value: 8, min: 0 },
+    ],
+    previousStatement: null, nextStatement: null,
+    tooltip: 'Converte pitch e roll em velocidade diferencial para os dois motores, com zona morta configurável.',
+  },
+
+  // ── EXTRAS / UTILITÁRIOS ───────────────────────────────────────────────────
+  {
+    type: 'util_map_float', colour: 200,
+    message0: 'Converter (float) %1 de %2-%3 para %4-%5',
+    args0: [
+      { type: 'input_value', name: 'VALOR' },
+      { type: 'field_number', name: 'DE_MIN', value: 0 },
+      { type: 'field_number', name: 'DE_MAX', value: 45 },
+      { type: 'field_number', name: 'PARA_MIN', value: 150 },
+      { type: 'field_number', name: 'PARA_MAX', value: 255 },
+    ],
+    inputsInline: true, output: null,
+    tooltip: 'Versão decimal (float) da função map. Necessária para converter ângulos em velocidade.',
+  },
+  {
+    type: 'util_fabsf', colour: 200,
+    message0: '|%1| valor absoluto (float)',
+    args0: [{ type: 'input_value', name: 'VALOR' }],
+    output: null,
+    tooltip: 'Retorna o valor absoluto de um decimal. Ex: fabsf(-12.5) = 12.5',
+  },
+  {
+    type: 'valor_booleano_fixo', colour: 210,
+    message0: '%1',
+    args0: [{ type: 'field_dropdown', name: 'VALOR', options: [['verdadeiro (true)', 'true'], ['falso (false)', 'false']] }],
+    output: 'Boolean',
+    tooltip: 'Um valor fixo verdadeiro ou falso.',
+  },
 ];
 
 Blockly.defineBlocksWithJsonArray(customBlocks);
@@ -153,7 +344,7 @@ Blockly.defineBlocksWithJsonArray(customBlocks);
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Estrutura
-cppGenerator.forBlock['bloco_setup'] = (b: Blockly.Block) => `void setup() {\n  Serial.begin(9600);\n${cppGenerator.statementToCode(b, 'DO') || '  // Suas configurações entrarão aqui...\n'}}\n\n`;
+cppGenerator.forBlock['bloco_setup'] = (b: Blockly.Block) => `void setup() {\n  Serial.begin(115200);\n${cppGenerator.statementToCode(b, 'DO') || '  // Suas configurações entrarão aqui...\n'}}\n\n`;
 cppGenerator.forBlock['bloco_loop'] = (b: Blockly.Block) => `void loop() {\n${cppGenerator.statementToCode(b, 'DO') || '  // Suas ações principais entrarão aqui...\n'}}\n\n`;
 
 // Pinos
@@ -261,8 +452,144 @@ cppGenerator.forBlock['buzzer_tocar_tempo'] = (b: Blockly.Block) =>
 cppGenerator.forBlock['buzzer_parar'] = (b: Blockly.Block) =>
   `  noTone(${b.getFieldValue('PIN')});\n`;
 
+// ── ESP-NOW COMUM ──────────────────────────────────────────────────────────
+cppGenerator.forBlock['espnow_iniciar_wifi'] = (_b: Blockly.Block) =>
+  `  WiFi.mode(WIFI_STA);\n  WiFi.disconnect();\n  delay(100);\n`;
+
+cppGenerator.forBlock['espnow_mac_serial'] = (_b: Blockly.Block) =>
+  `  Serial.print("[INFO] MAC: ");\n  Serial.println(WiFi.macAddress());\n`;
+
+// ── ESP-NOW TRANSMISSOR ────────────────────────────────────────────────────
+cppGenerator.forBlock['espnow_transmissor_init'] = (_b: Blockly.Block) =>
+  `  if (esp_now_init() != ESP_OK) {\n    Serial.println("[ERRO] ESP-NOW falhou");\n    while(true) delay(1000);\n  }\n`;
+
+cppGenerator.forBlock['espnow_adicionar_receptor'] = (b: Blockly.Block) => {
+  const mac = (b.getFieldValue('MAC') || 'AA:BB:CC:DD:EE:FF');
+  const parts = mac.split(':').map((p: string) => `0x${p.toUpperCase()}`);
+  // Também atualiza o array global usado em esp_now_send
+  return (
+    `  memcpy(_espnow_peer_mac, (uint8_t[]){${parts.join(', ')}}, 6);\n` +
+    `  {\n    esp_now_peer_info_t _pi = {};\n` +
+    `    memcpy(_pi.peer_addr, _espnow_peer_mac, 6);\n` +
+    `    _pi.channel = 0;\n    _pi.encrypt = false;\n` +
+    `    esp_now_add_peer(&_pi);\n  }\n`
+  );
+};
+
+cppGenerator.forBlock['espnow_enviar_pacote'] = (b: Blockly.Block) => {
+  const pitch = cppGenerator.valueToCode(b, 'PITCH', 99) || '0.0f';
+  const roll  = cppGenerator.valueToCode(b, 'ROLL',  99) || '0.0f';
+  const parar = cppGenerator.valueToCode(b, 'PARAR', 0)  || 'false';
+  return (
+    `  {\n    _PacoteDados _pkt;\n` +
+    `    _pkt.pitch = (float)(${pitch});\n` +
+    `    _pkt.roll  = (float)(${roll});\n` +
+    `    _pkt.parar = ${parar};\n` +
+    `    esp_now_send(_espnow_peer_mac, (uint8_t*)&_pkt, sizeof(_pkt));\n  }\n`
+  );
+};
+
+// ── ESP-NOW RECEPTOR ───────────────────────────────────────────────────────
+cppGenerator.forBlock['espnow_receptor_init'] = (_b: Blockly.Block) =>
+  `  if (esp_now_init() != ESP_OK) {\n    Serial.println("[ERRO] ESP-NOW falhou");\n    while(true) delay(1000);\n  }\n  esp_now_register_recv_cb(_bloquin_OnDataRecv);\n`;
+
+cppGenerator.forBlock['espnow_tem_dados_novos'] = (_b: Blockly.Block) =>
+  [`_espnow_dadosNovos`, 0];
+
+cppGenerator.forBlock['espnow_ler_pitch'] = (_b: Blockly.Block) =>
+  [`_espnow_pacote.pitch`, 0];
+
+cppGenerator.forBlock['espnow_ler_roll'] = (_b: Blockly.Block) =>
+  [`_espnow_pacote.roll`, 0];
+
+cppGenerator.forBlock['espnow_ler_flag_parar'] = (_b: Blockly.Block) =>
+  [`_espnow_pacote.parar`, 0];
+
+cppGenerator.forBlock['espnow_timeout_ms'] = (b: Blockly.Block) =>
+  [`(_espnow_primeiroRx && (millis() - _espnow_ultimoRx > ${b.getFieldValue('MS')}UL))`, 0];
+
+// ── MPU-6050 ───────────────────────────────────────────────────────────────
+cppGenerator.forBlock['mpu_iniciar'] = (b: Blockly.Block) => {
+  const sda = b.getFieldValue('SDA');
+  const scl = b.getFieldValue('SCL');
+  return (
+    `  Wire.begin(${sda}, ${scl});\n` +
+    `  _mpu.initialize();\n` +
+    `  if (!_mpu.testConnection()) {\n` +
+    `    Serial.println("[ERRO] MPU-6050 nao encontrado!");\n` +
+    `  } else {\n    Serial.println("[OK] MPU-6050 pronto.");\n  }\n`
+  );
+};
+
+cppGenerator.forBlock['mpu_ler_pitch'] = (_b: Blockly.Block) =>
+  [`_bloquin_lerPitch()`, 0];
+
+cppGenerator.forBlock['mpu_ler_roll'] = (_b: Blockly.Block) =>
+  [`_bloquin_lerRoll()`, 0];
+
+// ── PONTE H L298N ──────────────────────────────────────────────────────────
+cppGenerator.forBlock['l298n_configurar'] = (b: Blockly.Block) => {
+  const ena = b.getFieldValue('ENA');
+  const in1 = b.getFieldValue('IN1');
+  const in2 = b.getFieldValue('IN2');
+  const in3 = b.getFieldValue('IN3');
+  const in4 = b.getFieldValue('IN4');
+  const enb = b.getFieldValue('ENB');
+  // Armazena nos globais e configura pinos
+  return (
+    `  _l298n_ENA=${ena}; _l298n_IN1=${in1}; _l298n_IN2=${in2};\n` +
+    `  _l298n_IN3=${in3}; _l298n_IN4=${in4}; _l298n_ENB=${enb};\n` +
+    `  pinMode(${ena},OUTPUT); digitalWrite(${ena},LOW);\n` +
+    `  pinMode(${enb},OUTPUT); digitalWrite(${enb},LOW);\n` +
+    `  pinMode(${in1},OUTPUT); digitalWrite(${in1},LOW);\n` +
+    `  pinMode(${in2},OUTPUT); digitalWrite(${in2},LOW);\n` +
+    `  pinMode(${in3},OUTPUT); digitalWrite(${in3},LOW);\n` +
+    `  pinMode(${in4},OUTPUT); digitalWrite(${in4},LOW);\n`
+  );
+};
+
+cppGenerator.forBlock['l298n_pwm_configurar'] = (b: Blockly.Block) => {
+  const ena = b.getFieldValue('ENA');
+  const enb = b.getFieldValue('ENB');
+  return (
+    `  ledcAttach(${ena}, 1000, 8);\n` +
+    `  ledcAttach(${enb}, 1000, 8);\n` +
+    `  ledcWrite(${ena}, 0);\n` +
+    `  ledcWrite(${enb}, 0);\n`
+  );
+};
+
+cppGenerator.forBlock['l298n_motor_esquerdo'] = (b: Blockly.Block) =>
+  `  _bloquin_motorE(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'});\n`;
+
+cppGenerator.forBlock['l298n_motor_direito'] = (b: Blockly.Block) =>
+  `  _bloquin_motorD(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'});\n`;
+
+cppGenerator.forBlock['l298n_parar_motores'] = (_b: Blockly.Block) =>
+  `  _bloquin_motorE(0);\n  _bloquin_motorD(0);\n`;
+
+cppGenerator.forBlock['l298n_velocidade_por_pitch_roll'] = (b: Blockly.Block) => {
+  const pitch = cppGenerator.valueToCode(b, 'PITCH', 99) || '0.0f';
+  const roll  = cppGenerator.valueToCode(b, 'ROLL',  99) || '0.0f';
+  const zonaP = b.getFieldValue('ZONA_P');
+  const zonaR = b.getFieldValue('ZONA_R');
+  return `  _bloquin_aplicarControle((float)(${pitch}), (float)(${roll}), ${zonaP}.0f, ${zonaR}.0f);\n`;
+};
+
+// ── EXTRAS / UTILITÁRIOS ───────────────────────────────────────────────────
+cppGenerator.forBlock['util_map_float'] = (b: Blockly.Block) => {
+  const v = cppGenerator.valueToCode(b, 'VALOR', 99) || '0';
+  return [`_bloquin_mapFloat((float)(${v}), ${b.getFieldValue('DE_MIN')}.0f, ${b.getFieldValue('DE_MAX')}.0f, ${b.getFieldValue('PARA_MIN')}.0f, ${b.getFieldValue('PARA_MAX')}.0f)`, 0];
+};
+
+cppGenerator.forBlock['util_fabsf'] = (b: Blockly.Block) =>
+  [`fabsf((float)(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'}))`, 0];
+
+cppGenerator.forBlock['valor_booleano_fixo'] = (b: Blockly.Block) =>
+  [b.getFieldValue('VALOR'), 0];
+
 // ─────────────────────────────────────────────────────────────────────────────
-// generateCode — ordena corretamente: includes → globais → funções → setup → loop
+// generateCode — ordena: includes → globais → funções → setup → loop
 // ─────────────────────────────────────────────────────────────────────────────
 
 const generateCode = (ws: Blockly.WorkspaceSvg): string => {
@@ -289,11 +616,11 @@ const generateCode = (ws: Blockly.WorkspaceSvg): string => {
     ...globalVarLines,
     globalVarLines.length > 0 ? '\n' : '',
     ...funcDefLines,
-    setupCode || 'void setup() {\n  Serial.begin(9600);\n  // Suas configurações entrarão aqui...\n}\n\n',
+    setupCode || 'void setup() {\n  Serial.begin(115200);\n  // Suas configurações entrarão aqui...\n}\n\n',
     loopCode || 'void loop() {\n  // Suas ações principais entrarão aqui...\n}\n\n',
   ].filter(Boolean).join('');
 
-  // ── Servo: detecta pinos usados e injeta #include + objetos globais ────────
+  // ── Servo ─────────────────────────────────────────────────────────────────
   const needsServo = mainCode.includes('_servoObj_');
   let servoHeader = '';
   if (needsServo) {
@@ -307,7 +634,7 @@ const generateCode = (ws: Blockly.WorkspaceSvg): string => {
       '\n\n';
   }
 
-  // ── Ultrassônico: injeta helpers ──────────────────────────────────────────
+  // ── Ultrassônico ──────────────────────────────────────────────────────────
   const needsEntre   = mainCode.includes('_distanciaEntre(');
   const needsUltrass = mainCode.includes('_lerDistancia(') || needsEntre;
   let helperLer   = '';
@@ -328,7 +655,117 @@ const generateCode = (ws: Blockly.WorkspaceSvg): string => {
     }
   }
 
-  const prefix = servoHeader + helperLer + helperEntre + (needsUltrass ? '\n' : '');
+  // ── ESP-NOW ───────────────────────────────────────────────────────────────
+  const needsEspNowRx = mainCode.includes('_bloquin_OnDataRecv') || mainCode.includes('_espnow_dadosNovos') || mainCode.includes('_espnow_pacote');
+  const needsEspNowTx = mainCode.includes('esp_now_send(');
+  const needsEspNow   = needsEspNowTx || needsEspNowRx || mainCode.includes('esp_now_init()') || mainCode.includes('WiFi.mode(');
+
+  let espNowHeader = '';
+  if (needsEspNow) {
+    espNowHeader =
+      '#include <esp_now.h>\n' +
+      '#include <WiFi.h>\n\n' +
+      'typedef struct { float pitch; float roll; bool parar; } _PacoteDados;\n' +
+      '_PacoteDados _espnow_pacote;\n' +
+      'volatile bool _espnow_dadosNovos = false;\n' +
+      'unsigned long _espnow_ultimoRx = 0;\n' +
+      'bool _espnow_primeiroRx = false;\n';
+
+    if (needsEspNowTx) {
+      espNowHeader += 'uint8_t _espnow_peer_mac[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};\n';
+    }
+
+    if (needsEspNowRx) {
+      espNowHeader +=
+        '\nvoid _bloquin_OnDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {\n' +
+        '  if (len != sizeof(_PacoteDados)) return;\n' +
+        '  memcpy(&_espnow_pacote, data, sizeof(_PacoteDados));\n' +
+        '  _espnow_dadosNovos = true;\n' +
+        '  _espnow_ultimoRx = millis();\n' +
+        '  _espnow_primeiroRx = true;\n' +
+        '}\n';
+    }
+    espNowHeader += '\n';
+  }
+
+  // ── MPU-6050 ─────────────────────────────────────────────────────────────
+  const needsMPU = mainCode.includes('_mpu') || mainCode.includes('_bloquin_lerPitch') || mainCode.includes('_bloquin_lerRoll');
+  let mpuHeader = '';
+  if (needsMPU) {
+    mpuHeader =
+      '#include <Wire.h>\n' +
+      '#include <MPU6050.h>\n\n' +
+      'MPU6050 _mpu;\n\n' +
+      'float _bloquin_lerPitch() {\n' +
+      '  int16_t ax, ay, az, gx, gy, gz;\n' +
+      '  _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\n' +
+      '  return atan2f((float)ay, (float)az) * 180.0f / PI;\n' +
+      '}\n' +
+      'float _bloquin_lerRoll() {\n' +
+      '  int16_t ax, ay, az, gx, gy, gz;\n' +
+      '  _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\n' +
+      '  return atan2f((float)ax, (float)az) * 180.0f / PI;\n' +
+      '}\n\n';
+  }
+
+  // ── Ponte H L298N ─────────────────────────────────────────────────────────
+  const needsL298N = mainCode.includes('_bloquin_motorE') || mainCode.includes('_bloquin_motorD') || mainCode.includes('_l298n_');
+  const needsAplicarControle = mainCode.includes('_bloquin_aplicarControle');
+  const needsMapFloat = mainCode.includes('_bloquin_mapFloat');
+
+  let l298nHeader = '';
+  if (needsL298N) {
+    l298nHeader =
+      '// Pinos da Ponte H (configurados pelo bloco "Configurar Ponte H")\n' +
+      'int _l298n_ENA=25, _l298n_IN1=26, _l298n_IN2=27;\n' +
+      'int _l298n_IN3=14, _l298n_IN4=33, _l298n_ENB=32;\n\n';
+
+    if (needsMapFloat || needsAplicarControle) {
+      l298nHeader +=
+        'float _bloquin_mapFloat(float x, float iMin, float iMax, float oMin, float oMax) {\n' +
+        '  return (x - iMin) * (oMax - oMin) / (iMax - iMin) + oMin;\n' +
+        '}\n\n';
+    }
+
+    l298nHeader +=
+      'void _bloquin_motorE(int v) {\n' +
+      '  v = constrain(v, -255, 255);\n' +
+      '  digitalWrite(_l298n_IN1, v > 0 ? HIGH : LOW);\n' +
+      '  digitalWrite(_l298n_IN2, v < 0 ? HIGH : LOW);\n' +
+      '  ledcWrite(_l298n_ENA, abs(v));\n' +
+      '}\n' +
+      'void _bloquin_motorD(int v) {\n' +
+      '  v = constrain(v, -255, 255);\n' +
+      '  digitalWrite(_l298n_IN3, v > 0 ? HIGH : LOW);\n' +
+      '  digitalWrite(_l298n_IN4, v < 0 ? HIGH : LOW);\n' +
+      '  ledcWrite(_l298n_ENB, abs(v));\n' +
+      '}\n\n';
+
+    if (needsAplicarControle) {
+      l298nHeader +=
+        'void _bloquin_aplicarControle(float pitch, float roll, float zonaP, float zonaR) {\n' +
+        '  float ap = fabsf(pitch), ar = fabsf(roll);\n' +
+        '  int vb = 0;\n' +
+        '  if (ap > zonaP) vb = (int)_bloquin_mapFloat(constrain(ap, zonaP, 45.0f), zonaP, 45.0f, 150, 255);\n' +
+        '  int dlt = 0;\n' +
+        '  if (ar > zonaR && vb > 0) dlt = (int)_bloquin_mapFloat(constrain(ar, zonaR, 35.0f), zonaR, 35.0f, 0, vb * 0.8f);\n' +
+        '  int sn = (pitch >= 0) ? 1 : -1;\n' +
+        '  int ve = sn * constrain((roll > zonaR ? vb + dlt : roll < -zonaR ? vb - dlt : vb), 0, 255);\n' +
+        '  int vd = sn * constrain((roll > zonaR ? vb - dlt : roll < -zonaR ? vb + dlt : vb), 0, 255);\n' +
+        '  _bloquin_motorE(ve);\n' +
+        '  _bloquin_motorD(vd);\n' +
+        '}\n\n';
+    }
+  } else if (needsMapFloat) {
+    // mapFloat standalone sem L298N
+    l298nHeader =
+      'float _bloquin_mapFloat(float x, float iMin, float iMax, float oMin, float oMax) {\n' +
+      '  return (x - iMin) * (oMax - oMin) / (iMax - iMin) + oMin;\n' +
+      '}\n\n';
+  }
+
+  const prefix = espNowHeader + mpuHeader + l298nHeader +
+                 servoHeader + helperLer + helperEntre + (needsUltrass ? '\n' : '');
   return prefix + mainCode;
 };
 
@@ -378,6 +815,8 @@ const toolboxConfig = {
         { kind: 'block', type: 'constrain_valor', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 0 } } } } },
         { kind: 'block', type: 'random_valor' },
         { kind: 'block', type: 'millis_atual' },
+        { kind: 'block', type: 'util_map_float', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 0 } } } } },
+        { kind: 'block', type: 'util_fabsf', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 0 } } } } },
       ],
     },
     {
@@ -387,6 +826,7 @@ const toolboxConfig = {
         { kind: 'block', type: 'atribuir_variavel', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 0 } } } } },
         { kind: 'block', type: 'ler_variavel' },
         { kind: 'block', type: 'incrementar_variavel', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 1 } } } } },
+        { kind: 'block', type: 'valor_booleano_fixo' },
       ],
     },
     {
@@ -429,6 +869,57 @@ const toolboxConfig = {
         { kind: 'block', type: 'escrever_serial_valor' },
       ],
     },
+    // ── NOVAS CATEGORIAS ──────────────────────────────────────────────────────
+    {
+      kind: 'category', name: 'ESP-NOW', colour: '70',
+      contents: [
+        { kind: 'block', type: 'espnow_iniciar_wifi' },
+        { kind: 'block', type: 'espnow_mac_serial' },
+        { kind: 'sep' },
+        { kind: 'block', type: 'espnow_transmissor_init' },
+        { kind: 'block', type: 'espnow_adicionar_receptor' },
+        {
+          kind: 'block', type: 'espnow_enviar_pacote',
+          inputs: {
+            PITCH: { block: { type: 'numero_fixo', fields: { VALOR: 0 } } },
+            ROLL:  { block: { type: 'numero_fixo', fields: { VALOR: 0 } } },
+            PARAR: { block: { type: 'valor_booleano_fixo', fields: { VALOR: 'false' } } },
+          },
+        },
+        { kind: 'sep' },
+        { kind: 'block', type: 'espnow_receptor_init' },
+        { kind: 'block', type: 'espnow_tem_dados_novos' },
+        { kind: 'block', type: 'espnow_ler_pitch' },
+        { kind: 'block', type: 'espnow_ler_roll' },
+        { kind: 'block', type: 'espnow_ler_flag_parar' },
+        { kind: 'block', type: 'espnow_timeout_ms' },
+      ],
+    },
+    {
+      kind: 'category', name: 'MPU-6050', colour: '310',
+      contents: [
+        { kind: 'block', type: 'mpu_iniciar' },
+        { kind: 'block', type: 'mpu_ler_pitch' },
+        { kind: 'block', type: 'mpu_ler_roll' },
+      ],
+    },
+    {
+      kind: 'category', name: 'Ponte H L298N', colour: '0',
+      contents: [
+        { kind: 'block', type: 'l298n_configurar' },
+        { kind: 'block', type: 'l298n_pwm_configurar' },
+        { kind: 'block', type: 'l298n_motor_esquerdo', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 200 } } } } },
+        { kind: 'block', type: 'l298n_motor_direito', inputs: { VALOR: { block: { type: 'numero_fixo', fields: { VALOR: 200 } } } } },
+        { kind: 'block', type: 'l298n_parar_motores' },
+        {
+          kind: 'block', type: 'l298n_velocidade_por_pitch_roll',
+          inputs: {
+            PITCH: { block: { type: 'espnow_ler_pitch' } },
+            ROLL:  { block: { type: 'espnow_ler_roll'  } },
+          },
+        },
+      ],
+    },
   ],
 };
 
@@ -458,11 +949,14 @@ const BLOCK_NAMES: Record<string, string> = {
   constrain_valor: 'Limitar Valor',
   random_valor: 'Número Aleatório',
   millis_atual: 'Tempo Ligado (ms)',
+  util_map_float: 'Converter (float)',
+  util_fabsf: 'Valor Absoluto (float)',
   // Variáveis
   declarar_variavel_global: 'Variável Global',
   atribuir_variavel: 'Guardar em Variável',
   ler_variavel: 'Ler Variável',
   incrementar_variavel: 'Aumentar Variável',
+  valor_booleano_fixo: 'Verdadeiro / Falso',
   // Funções
   definir_funcao: 'Definir Função',
   chamar_funcao: 'Executar Função',
@@ -483,6 +977,29 @@ const BLOCK_NAMES: Record<string, string> = {
   // Comunicação
   escrever_serial: 'O Robô Diz (texto)',
   escrever_serial_valor: 'O Robô Diz (valor)',
+  // ESP-NOW
+  espnow_iniciar_wifi: 'Iniciar Wi-Fi (ESP-NOW)',
+  espnow_mac_serial: 'Mostrar MAC no Serial',
+  espnow_transmissor_init: 'Iniciar ESP-NOW Transmissor',
+  espnow_adicionar_receptor: 'Adicionar Receptor (MAC)',
+  espnow_enviar_pacote: 'Enviar Pacote ESP-NOW',
+  espnow_receptor_init: 'Iniciar ESP-NOW Receptor',
+  espnow_tem_dados_novos: 'Chegou Novo Pacote?',
+  espnow_ler_pitch: 'Pitch Recebido',
+  espnow_ler_roll: 'Roll Recebido',
+  espnow_ler_flag_parar: 'Flag Parar Recebido',
+  espnow_timeout_ms: 'Timeout Sem Pacote',
+  // MPU-6050
+  mpu_iniciar: 'Iniciar MPU-6050',
+  mpu_ler_pitch: 'Ler Pitch (MPU-6050)',
+  mpu_ler_roll: 'Ler Roll (MPU-6050)',
+  // Ponte H L298N
+  l298n_configurar: 'Configurar Ponte H',
+  l298n_pwm_configurar: 'Configurar PWM LEDC',
+  l298n_motor_esquerdo: 'Motor Esquerdo',
+  l298n_motor_direito: 'Motor Direito',
+  l298n_parar_motores: 'Parar Motores',
+  l298n_velocidade_por_pitch_roll: 'Controlar por Pitch/Roll',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -582,7 +1099,6 @@ interface IdeScreenProps {
 
 type BoardLoadState = 'resolving' | 'selecting' | 'ready' | 'error';
 
-// Blocos de nível superior que ficam soltos no workspace (não são órfãos)
 const TOP_LEVEL_BLOCK_TYPES = new Set([
   'bloco_setup',
   'bloco_loop',
@@ -640,8 +1156,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
   };
 
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-  // ── FASE 1: Resolução da placa ──────────────────────────────────────────────
 
   useEffect(() => {
     if (!projectId) return;
@@ -706,8 +1220,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     setBoardLoadState('ready');
   };
 
-  // ── Effects ─────────────────────────────────────────────────────────────────
-
   useEffect(() => { fetchPorts(); }, []);
 
   useEffect(() => {
@@ -721,8 +1233,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     })();
     return () => { if (unlisten) unlisten(); };
   }, []);
-
-  // ── FASE 2: Inicialização do Blockly ────────────────────────────────────────
 
   useEffect(() => {
     if (boardLoadState !== 'ready' || !blocklyDiv.current || workspace.current) return;
@@ -781,8 +1291,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     return () => { if (unlisten) unlisten(); };
   }, []);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
-
   const handleToggleSerial = async () => {
     try {
       if (isSerialOpen) { await invoke('stop_serial'); setIsSerialOpen(false); }
@@ -829,8 +1337,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
     : '';
   const stageIndex = uploadStage ? UPLOAD_STAGES.findIndex(s => s.id === uploadStage) : -1;
   const currentStageData = uploadStage ? UPLOAD_STAGES.find(s => s.id === uploadStage) : null;
-
-  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="app-container">
