@@ -352,13 +352,6 @@ export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScre
         </div>
       )}
 
-      {role === 'visitor' && (
-        <div className="visitor-banner">
-          <span>👋 Modo Visitante</span>
-          <span>Seu projeto não será salvo. <strong>Faça login</strong> para criar uma conta e guardar seu trabalho.</span>
-        </div>
-      )}
-
       {/* TOPBAR */}
       <div className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '15px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 'fit-content' }}>

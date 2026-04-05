@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import logoSimples from '../assets/LogoSimples.png';
-import { BOARD_UNSET } from './IdeScreen';
+import { BOARD_UNSET } from '../blockly/blocks';
 import { invoke } from '@tauri-apps/api/core';
 
 interface TeacherDashboardProps {

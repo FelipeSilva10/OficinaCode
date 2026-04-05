@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import logoSimples from '../assets/LogoSimples.png';
-import { BOARD_UNSET } from './IdeScreen';
+import { BOARD_UNSET } from '../blockly/blocks';
 
 interface StudentDashboardProps {
   onLogout: () => void;
