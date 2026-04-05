@@ -8,14 +8,11 @@ use std::sync::Arc;
 use tauri::Emitter;
 use std::time::Duration;
 
-// ── Windows: ocultar janela de CMD em todos os subprocessos ──────────────────
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-/// Extensão de conveniência para adicionar a flag de janela oculta no Windows.
-/// No Linux/Mac é um no-op transparente.
 trait HideWindow {
     fn hide_window(&mut self) -> &mut Self;
 }
@@ -28,25 +25,14 @@ impl HideWindow for Command {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 struct AppState {
     is_reading_serial: Arc<AtomicBool>,
 }
 
-/// Procura o arduino-cli na seguinte ordem de prioridade:
-///
-/// 1. Binário empacotado junto ao executável (resources/) — build de produção.
-/// 2. Variável de ambiente ARDUINO_CLI_PATH — ideal para dev no Linux/Mac.
-/// 3. arduino-cli disponível no PATH do sistema — funciona no VSCode/terminal.
-/// 4. Plano B: download automático para pasta temporária.
 fn find_or_download_cli() -> Result<String, String> {
-    // ── 1. Binário nos resources do app (build de produção) ──────────────────
-    // Tauri copia os resources para junto do executável no bundle final.
     let exe_name = if cfg!(target_os = "windows") { "arduino-cli.exe" } else { "arduino-cli" };
 
     if let Ok(exe_path) = std::env::current_exe() {
-        // Tauri coloca os resources em <exe_dir>/resources/ no bundle
         let bundled = exe_path
             .parent()
             .unwrap_or(std::path::Path::new("."))
@@ -59,8 +45,6 @@ fn find_or_download_cli() -> Result<String, String> {
         }
     }
 
-    // ── 2. Variável de ambiente explícita (dev / CI) ─────────────────────────
-    // Exemplo: export ARDUINO_CLI_PATH=/usr/local/bin/arduino-cli
     if let Ok(path) = std::env::var("ARDUINO_CLI_PATH") {
         if std::path::Path::new(&path).exists() {
             println!(">>> [CLI] Usando ARDUINO_CLI_PATH={}", path);
@@ -68,9 +52,6 @@ fn find_or_download_cli() -> Result<String, String> {
         }
     }
 
-    // ── 3. PATH do sistema ───────────────────────────────────────────────────
-    // Funciona quando `arduino-cli` está instalado normalmente no sistema
-    // (inclusive quando rodando via `npm run tauri dev` no VSCode no Linux).
     if Command::new("arduino-cli")
         .hide_window()
         .arg("version")
@@ -81,7 +62,6 @@ fn find_or_download_cli() -> Result<String, String> {
         return Ok("arduino-cli".to_string());
     }
 
-    // ── 4. Plano B: download automático ─────────────────────────────────────
     let temp_dir  = env::temp_dir().join("bloquin_cli");
     let local_cli = temp_dir.join(exe_name);
 
@@ -143,7 +123,6 @@ fn find_or_download_cli() -> Result<String, String> {
     }
 }
 
-/// Garante que os pacotes de placas (cores) estejam instalados.
 fn ensure_core_installed(cli_path: &str, placa: &str) -> Result<String, String> {
     let (core, fqbn) = match placa {
         "uno"   => ("arduino:avr", "arduino:avr:uno"),
@@ -213,7 +192,6 @@ fn ensure_core_installed(cli_path: &str, placa: &str) -> Result<String, String> 
     Ok(fqbn.to_string())
 }
 
-/// Toda a lógica pesada de compilação/envio, isolada para rodar em thread de fundo.
 fn run_upload_pipeline(codigo: &str, placa: &str, porta: &str) -> Result<(), String> {
     println!(">>> [UPLOAD] Iniciando pipeline...");
 
@@ -257,12 +235,6 @@ fn run_upload_pipeline(codigo: &str, placa: &str, porta: &str) -> Result<(), Str
     Ok(())
 }
 
-/// Inicia o upload em uma thread separada para não bloquear a UI.
-/// O resultado é enviado de volta como evento Tauri: "upload-result".
-///   - Sucesso: payload = "ok"
-///   - Erro:    payload = "err:<mensagem>"
-///
-/// O frontend escuta esse evento e atualiza o estado de loading/erro.
 #[tauri::command]
 fn upload_code(
     codigo: String,
@@ -271,13 +243,11 @@ fn upload_code(
     window: tauri::Window,
     state: tauri::State<AppState>,
 ) -> Result<String, String> {
-    // Para o serial imediatamente, liberando a porta antes do upload
     state.is_reading_serial.store(false, Ordering::Relaxed);
 
     let window_clone = window.clone();
 
     std::thread::spawn(move || {
-        // Aguarda o serial fechar a porta de fato
         std::thread::sleep(Duration::from_millis(600));
 
         let result = run_upload_pipeline(&codigo, &placa, &porta);
@@ -288,7 +258,6 @@ fn upload_code(
         }
     });
 
-    // Retorna imediatamente — a UI não trava
     Ok("iniciando".to_string())
 }
 
@@ -368,32 +337,70 @@ fn get_available_ports() -> Result<Vec<String>, String> {
     }
 }
 
+// ─── SEGURANÇA: tokens injetados via initialization_script, nunca na URL ──────
+//
+// ANTES (inseguro):
+//   let url = format!("{}/auto-login?access_token={}&...", base, token, ...);
+//
+// Problema: tokens JWT ficavam no histórico da WebviewWindow, em logs do servidor
+// Vercel e em headers Referer de recursos externos carregados pela página.
+//
+// AGORA (seguro):
+//   Tokens são embutidos como propriedade imutável do window via initialization_script,
+//   que é executado antes de qualquer JS da página, sem aparecer em URL ou rede.
+//
+// MIGRAÇÃO NECESSÁRIA NO SAG (oficina-admin):
+//   A página /auto-login precisa ler window.__bloquin_auth em vez de searchParams:
+//
+//   // pages/auto-login.tsx ou app/auto-login/page.tsx
+//   useEffect(() => {
+//     const tokens = (window as any).__bloquin_auth;
+//     if (tokens?.access_token && tokens?.refresh_token) {
+//       supabase.auth.setSession({
+//         access_token: tokens.access_token,
+//         refresh_token: tokens.refresh_token,
+//       }).then(({ error }) => {
+//         if (!error) router.push('/dashboard');
+//         else router.push('/login?error=session');
+//       });
+//     } else {
+//       router.push('/login?error=no_tokens');
+//     }
+//   }, []);
+// ──────────────────────────────────────────────────────────────────────────────
 #[tauri::command]
 async fn open_admin_panel(
     app: tauri::AppHandle,
     access_token: String,
     refresh_token: String,
 ) -> Result<String, String> {
-    use tauri::Manager; // Importação necessária para usar o get_webview_window
+    use tauri::Manager;
 
-    // 1. Verifica se a janela já existe. Se sim, apenas foca nela para não travar.
+    // Se a janela já existe, apenas traz para frente
     if let Some(window) = app.get_webview_window("admin-panel") {
         window.set_focus().map_err(|e| format!("Erro ao focar a janela: {}", e))?;
         return Ok("ok".to_string());
     }
 
-    // 2. Cria a janela apenas se ela não existir
-    let admin_base_url = "https://oficinaadmin.vercel.app";
+    // Serializa os tokens como strings JSON (aspas + escape automático)
+    // serde_json::to_string em &str gera "\"valor\"" — seguro para embedding em JS
+    let at_json = serde_json::to_string(&access_token)
+        .map_err(|_| "Erro ao serializar access_token".to_string())?;
+    let rt_json = serde_json::to_string(&refresh_token)
+        .map_err(|_| "Erro ao serializar refresh_token".to_string())?;
 
-    let url = format!(
-        "{}/auto-login?access_token={}&refresh_token={}",
-        admin_base_url,
-        urlencoding::encode(&access_token),
-        urlencoding::encode(&refresh_token),
+    // Script executado ANTES de qualquer JS da página do SAG.
+    // Object.defineProperty com writable:false impede que a página sobrescreva os tokens.
+    let init_script = format!(
+        "(function(){{Object.defineProperty(window,'__bloquin_auth',{{value:{{access_token:{},refresh_token:{}}},writable:false,configurable:false,enumerable:false}});}})();",
+        at_json,
+        rt_json
     );
 
     let webview_url = tauri::WebviewUrl::External(
-        url.parse().map_err(|e| format!("URL inválida: {}", e))?
+        "https://oficinaadmin.vercel.app/auto-login"
+            .parse()
+            .map_err(|e| format!("URL inválida: {}", e))?,
     );
 
     tauri::WebviewWindowBuilder::new(&app, "admin-panel", webview_url)
@@ -401,6 +408,8 @@ async fn open_admin_panel(
         .inner_size(1280.0, 800.0)
         .min_inner_size(900.0, 600.0)
         .center()
+        .focused(true)                      // garante foco na primeira abertura
+        .initialization_script(&init_script) // injeta tokens antes do JS da página
         .build()
         .map_err(|e| format!("Erro ao abrir janela: {}", e))?;
 
