@@ -206,34 +206,39 @@ input::-webkit-credentials-auto-fill-button {
   background: linear-gradient(90deg, #f39c12, #e67e22);
   color: white; padding: 7px 20px; font-size: 0.9rem; font-weight: 800;
   z-index: 20; letter-spacing: 0.3px;
+  width: 100%; 
+  flex-shrink: 0; 
 }
 .readonly-banner span:first-child { font-size: 1rem; }
 
 /* ── Topbar ── */
 .topbar {
   height: 60px; background-color: var(--white);
-  display: flex; align-items: center; padding: 0 15px;
-  border-bottom: 2px solid var(--border); gap: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 15px; border-bottom: 2px solid var(--border); gap: 15px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.04); z-index: 10;
+  white-space: nowrap; 
+  overflow-x: auto; 
+  flex-shrink: 0; 
 }
+
 .topbar h2 { color: var(--dark); font-weight: 900; letter-spacing: -0.5px; font-size: 1.2rem; }
 
-.topbar-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.topbar-center { flex: 1; display: flex; justify-content: center; align-items: center; min-width: 0; overflow: hidden; }
-.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-/* Badge do título do projeto */
-.project-title-badge {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--surface); border: 2px solid var(--border);
-  border-radius: 10px; padding: 4px 12px;
-  font-weight: 800; font-size: 0.95rem; color: var(--dark);
-  max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+/* A mágica do Flexbox aqui: as laterais ganham "flex: 1", 
+   forçando o centro a ficar exatamente no meio, mas respeitando limites físicos. */
+.topbar-left { 
+  display: flex; align-items: center; gap: 12px; 
+  flex: 1; justify-content: flex-start; min-width: fit-content;
 }
-.read-only-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #f39c12; flex-shrink: 0;
-  animation: blink 1.5s ease-in-out infinite;
+
+.topbar-center { 
+  display: flex; justify-content: center; align-items: center; 
+  flex: 0 0 auto; /* O centro ocupa apenas o espaço necessário */
+}
+
+.topbar-right { 
+  display: flex; align-items: center; gap: 8px; 
+  flex: 1; justify-content: flex-end; min-width: fit-content;
 }
 
 /* ── Controles de hardware ── */
@@ -281,7 +286,12 @@ input::-webkit-credentials-auto-fill-button {
 /* ═══════════════════════════════════════════════════
    WORKSPACE + PAINEL DE CÓDIGO
    ═══════════════════════════════════════════════════ */
-.workspace-area { display: flex; flex: 1; height: calc(100vh - 60px); }
+.workspace-area { 
+  display: flex; 
+  flex: 1; 
+  overflow: hidden;
+}
+
 #blocklyDiv { flex: 1; height: 100%; }
 
 .code-panel {
@@ -460,3 +470,68 @@ pre {
 }
 .serial-clear-btn:hover { background: rgba(255,255,255,0.12); color: white; }
 .serial-clear-btn:active { transform: scale(0.95); }
+
+/* ═══════════════════════════════════════════════════
+   NOVAS CLASSES DA ETAPA 2 (LIMPEZA DE INLINE STYLES)
+   ═══════════════════════════════════════════════════ */
+
+/* Topbar Helpers (Aproveitando as classes que já existiam) */
+.topbar-center-absolute { position: absolute; left: 50%; transform: translateX(-50%); }
+
+/* Modais - Resolving/Loading */
+.loading-overlay-text { color: #fff; font-size: 1.1rem; font-weight: 800; opacity: 0.85; }
+
+/* Badge da Placa na Topbar */
+.board-badge {
+  display: flex; align-items: center; gap: 7px; border-radius: 100px;
+  padding: 4px 14px 4px 10px; font-weight: 900; font-size: 0.9rem; user-select: none;
+}
+.board-badge-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+/* Modal de Seleção de Placa */
+.board-modal-card {
+  background: var(--white); border-radius: 32px; padding: 44px 40px 36px;
+  max-width: 680px; width: 95%; box-shadow: var(--shadow-xl);
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border-top: 6px solid var(--primary); display: flex; flex-direction: column;
+  align-items: center; gap: 28px; text-align: center;
+}
+.board-modal-title { color: var(--dark); font-size: 1.7rem; font-weight: 900; margin-bottom: 8px; }
+.board-modal-subtitle { color: var(--text-muted); font-size: 1rem; font-weight: 700; line-height: 1.5; }
+.board-modal-subtitle strong { color: #e17055; }
+.board-list { display: flex; flex-direction: row; gap: 16px; width: 100%; justify-content: center; }
+
+.board-card {
+  background: transparent; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 18px 16px 14px; border-radius: 20px; cursor: pointer; border: none;
+  box-shadow: var(--shadow-sm); transition: all 0.18s ease; flex: 1; min-width: 0; outline: none;
+}
+.board-card:hover { transform: translateY(-4px) scale(1.03); }
+.board-img-wrap { width: 100%; aspect-ratio: 4/3; border-radius: 12px; overflow: hidden; flex-shrink: 0; }
+.board-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.25s ease; }
+.board-card:hover .board-img { transform: scale(1.06); }
+.board-card-title { font-weight: 900; font-size: 1rem; transition: color 0.18s ease; line-height: 1.2; }
+
+/* Painel de Código C++ */
+.code-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.code-panel-title { margin: 0; color: var(--secondary); font-weight: 800; }
+.code-fullscreen-btn {
+  background: transparent; border: 1px solid #485460; color: #a4b0be;
+  padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+  margin: 0; box-shadow: none; transition: all 0.2s;
+}
+.code-fullscreen-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* Detalhes Técnicos (Modal de Erro) */
+.tech-details-wrap { width: 100%; margin-top: 15px; }
+.tech-details-btn {
+  font-size: 0.8rem; padding: 5px 10px; border: none; background: transparent;
+  text-decoration: underline; color: #636e72; cursor: pointer; margin: 0 auto;
+  display: block; box-shadow: none; transition: color 0.2s;
+}
+.tech-details-btn:hover { color: var(--dark); }
+.tech-details-pre {
+  text-align: left; background-color: #2d3436; color: #ff7675; padding: 10px;
+  border-radius: 5px; font-size: 0.75rem; margin-top: 10px; white-space: pre-wrap;
+  max-height: 150px; overflow-y: auto;
+}
