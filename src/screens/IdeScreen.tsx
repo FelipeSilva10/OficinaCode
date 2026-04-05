@@ -375,6 +375,7 @@ const { error } = await ProjectService.saveProject(
         messages={serialMessages} 
         onClose={handleToggleSerial} 
         onClear={() => setSerialMessages([])} 
+        isCodeOpen={isCodeVisible} /* ADICIONE ESTA LINHA */
       />
 
       {friendlyError && (

@@ -10,12 +10,12 @@ interface SerialMonitorProps {
   messages: SerialMessage[];
   onClose: () => void;
   onClear: () => void;
+  isCodeOpen: boolean; // 1. NOVA PROPRIEDADE AQUI
 }
 
-export function SerialMonitor({ isOpen, messages, onClose, onClear }: SerialMonitorProps) {
+export function SerialMonitor({ isOpen, messages, onClose, onClear, isCodeOpen }: SerialMonitorProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // O próprio componente cuida do scroll! Tiramos essa responsabilidade da IdeScreen.
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -25,7 +25,7 @@ export function SerialMonitor({ isOpen, messages, onClose, onClear }: SerialMoni
   if (!isOpen) return null;
 
   return (
-    <div className="serial-monitor">
+    <div className={`serial-monitor ${isCodeOpen ? 'shifted' : ''}`}>
       <div className="serial-monitor-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div className="serial-status-dot" />

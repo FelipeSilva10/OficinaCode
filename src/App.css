@@ -213,13 +213,13 @@ input::-webkit-credentials-auto-fill-button {
 
 /* ── Topbar ── */
 .topbar {
-  height: 60px; background-color: var(--white);
+  min-height: 60px;
+  background-color: var(--white);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 15px; border-bottom: 2px solid var(--border); gap: 15px;
+  padding: 8px 15px; /* Adicionado padding vertical */
+  border-bottom: 2px solid var(--border); gap: 15px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.04); z-index: 10;
-  white-space: nowrap; 
-  overflow-x: auto; 
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 .topbar h2 { color: var(--dark); font-weight: 900; letter-spacing: -0.5px; font-size: 1.2rem; }
@@ -257,7 +257,12 @@ input::-webkit-credentials-auto-fill-button {
 .hardware-controls select {
   background: transparent; border: none !important; font-size: 0.95rem; font-weight: 700;
   color: var(--dark); cursor: pointer; outline: none; padding: 0 !important; margin: 0 !important; height: auto;
+  max-width: 140px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
+
 .hardware-controls select:focus { border: none !important; box-shadow: none !important; }
 .control-divider { width: 3px; height: 20px; background-color: var(--border); margin: 0 10px; border-radius: 2px; }
 
@@ -294,28 +299,48 @@ input::-webkit-credentials-auto-fill-button {
 
 #blocklyDiv { flex: 1; height: 100%; }
 
+/* PAINEL DE CÓDIGO (Limpo e sem hacks de direção RTL) */
 .code-panel {
-  width: 350px; min-width: 250px; max-width: 50vw;
-  background-color: var(--dark); border-left: 2px solid #1a252f;
-  padding: 20px; display: flex; flex-direction: column;
-  direction: rtl; resize: horizontal; overflow: hidden;
+  width: 350px; 
+  min-width: 250px; 
+  max-width: 50vw;
+  background-color: var(--dark); 
+  border-left: 2px solid #1a252f;
+  padding: 20px; 
+  display: flex; 
+  flex-direction: column;
+  flex-shrink: 0; /* Impede que o Blockly esmague o painel lateral */
 }
-.code-panel > * { direction: ltr; }
-.code-panel h3 { margin-bottom: 15px; color: var(--secondary); font-weight: 800; }
 
+/* O <pre> agora cuida da sua própria barra de rolagem */
 pre {
-  background-color: #1e272e; padding: 15px; border-radius: 12px; overflow-y: auto;
-  flex: 1; color: #d2dae2; font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 0.88rem; line-height: 1.6; border: 1px solid #485460;
+  background-color: #1e272e; 
+  padding: 15px; 
+  border-radius: 12px; 
+  flex: 1; 
+  color: #d2dae2; 
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.88rem; 
+  line-height: 1.6; 
+  border: 1px solid #485460;
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+  
+  /* Rolagem isolada para não quebrar o layout */
+  overflow-y: auto;
+  overflow-x: auto;
+  white-space: pre;
 }
 
+/* Tela cheia limpa */
 .code-panel.fullscreen {
-  position: fixed; top: 0; left: 0;
-  width: 100vw !important; max-width: 100vw !important;
-  height: 100vh !important; z-index: 9999; resize: none; direction: ltr;
+  position: fixed; 
+  top: 0; 
+  left: 0;
+  width: 100vw !important; 
+  max-width: 100vw !important;
+  height: 100vh !important; 
+  z-index: 9999;
 }
-.code-panel.fullscreen > * { direction: ltr; }
 
 /* ═══════════════════════════════════════════════════
    MODAIS
@@ -398,10 +423,18 @@ pre {
   background: #1a2035; border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.4);
   display: flex; flex-direction: column;
-  z-index: 9000; overflow: hidden;
   border: 1px solid rgba(255,255,255,0.08);
+  z-index: 800; 
+  transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   animation: slideUp 0.3s ease;
 }
+
+.serial-monitor.shifted {
+  right: 380px; 
+}
+
+.modal-overlay { z-index: 1000 !important; }
+.code-panel.fullscreen { z-index: 900 !important; }
 
 .serial-monitor-header {
   background: linear-gradient(135deg, #00a8ff22, #00a8ff11);
@@ -534,4 +567,46 @@ pre {
   text-align: left; background-color: #2d3436; color: #ff7675; padding: 10px;
   border-radius: 5px; font-size: 0.75rem; margin-top: 10px; white-space: pre-wrap;
   max-height: 150px; overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════
+   ETAPA 2: DEGRADAÇÃO GRACIOSA (RESPONSIVIDADE)
+   ═══════════════════════════════════════════════════ */
+
+/* Para notebooks normais (telas menores que 1050px) */
+@media (max-width: 1050px) {
+  .topbar { gap: 8px; padding: 8px 10px; }
+  .topbar-left { gap: 8px; }
+  .topbar-right { gap: 6px; }
+  
+  /* Encolhe os paddings e fontes dos botões para ganhar espaço */
+  .topbar-btn, .btn-action { 
+    padding: 6px 12px; 
+    font-size: 0.85rem; 
+  }
+  
+  /* Trunca o nome do projeto se for gigante */
+  .project-title-badge { 
+    max-width: 160px; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    white-space: nowrap; 
+  }
+  
+  .hardware-controls select { max-width: 110px; }
+}
+
+/* Para telas pequenas ou janelas divididas (menores que 850px) */
+@media (max-width: 850px) {
+  /* Esconde o logo para dar espaço aos botões de ação (UX: função importa mais que a marca na hora do aperto) */
+  .topbar-left img { display: none; }
+  
+  /* Encolhe a badge da placa (remove paddings laterais grandes) */
+  .board-badge { padding: 4px 8px; font-size: 0.8rem; }
+  
+  /* Reduz mais o select */
+  .hardware-controls select { max-width: 85px; font-size: 0.85rem; }
+  
+  /* Remove o divider vertical para ganhar preciosos pixels */
+  .control-divider { display: none; }
 }
