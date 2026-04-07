@@ -141,6 +141,7 @@ export function initBlocks() {
     { type: 'espnow_ler_roll', colour: 300, message0: 'Inclinação esq/dir recebida', output: 'Number' }, // C6
     { type: 'espnow_ler_flag_parar', colour: 300, message0: 'Comando "parar" recebido?', output: 'Boolean' }, // C6
     { type: 'espnow_timeout_ms', colour: 300, message0: 'Sem sinal da luva por mais de %1 ms?', args0: [{ type: 'field_number', name: 'MS', value: 600, min: 100 }], output: 'Boolean' },
+    { type: 'espnow_marcar_lido', colour: 300, message0: '✅ Marcar mensagem como lida', args0: [], previousStatement: null, nextStatement: null, tooltip: 'Reseta o flag de dados novos. Coloque como primeiro bloco dentro de "SE Chegou mensagem da luva?".' },
 
     // ── MPU-6050
     { type: 'mpu_iniciar', colour: 310, message0: '🧭 Iniciar Acelerômetro (SDA %1 SCL %2)', args0: [{ type: 'field_dropdown', name: 'SDA', options: () => currentBoardPins }, { type: 'field_dropdown', name: 'SCL', options: () => currentBoardPins }], previousStatement: null, nextStatement: null, extensions: ['validacao_setup_ext'] },

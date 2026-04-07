@@ -120,6 +120,7 @@ export const toolboxConfig = {
         { kind: 'block', type: 'espnow_ler_roll' },
         { kind: 'block', type: 'espnow_ler_flag_parar' },
         { kind: 'block', type: 'espnow_timeout_ms' },
+        { kind: 'block', type: 'espnow_marcar_lido' }
       ],
     },
     {
@@ -207,6 +208,7 @@ export const BLOCK_NAMES: Record<string, string> = {
   espnow_ler_roll: 'Inclinação Esquerda/Direita (Luva)',
   espnow_ler_flag_parar: 'Comando Parar (Luva)',
   espnow_timeout_ms: 'Caiu a Conexão?',
+  espnow_marcar_lido: 'Marcar Mensagem como Lida',
   mpu_iniciar: 'Iniciar Acelerômetro',
   mpu_ler_pitch: 'Ler Inclinação Frente/Trás',
   mpu_ler_roll: 'Ler Inclinação Lateral',
