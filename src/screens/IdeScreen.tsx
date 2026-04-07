@@ -31,8 +31,7 @@ function BoardBadge({ boardKey }: { boardKey: BoardKey }) {
 
 interface IdeScreenProps { role: 'student' | 'teacher' | 'visitor'; readOnly?: boolean; onBack: () => void; projectId?: string; }
 type BoardLoadState = 'resolving' | 'selecting' | 'ready' | 'error';
-const TOP_LEVEL_BLOCK_TYPES = new Set(['bloco_setup', 'bloco_loop', 'declarar_variavel_global', 'definir_funcao']);
-
+const TOP_LEVEL_BLOCK_TYPES = new Set(['bloco_setup', 'bloco_loop', 'declarar_variavel_global', 'definir_funcao', 'definir_funcao_retorno']);
 export function IdeScreen({ role, readOnly = false, onBack, projectId }: IdeScreenProps) {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspace  = useRef<Blockly.WorkspaceSvg | null>(null);

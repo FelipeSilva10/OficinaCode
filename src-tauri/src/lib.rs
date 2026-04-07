@@ -272,7 +272,7 @@ fn start_serial(
     is_reading.store(true, Ordering::Relaxed);
 
     std::thread::spawn(move || {
-        let mut port = match serialport::new(&porta, 9600)
+            let mut port = match serialport::new(&porta, 115200)
             .timeout(Duration::from_millis(100))
             .open()
         {
