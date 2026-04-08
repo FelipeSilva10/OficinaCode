@@ -286,28 +286,39 @@ fn start_serial(
         let mut serial_buf: Vec<u8> = vec![0; 1000];
         let mut string_acumulada = String::new();
 
-        while is_reading.load(Ordering::Relaxed) {
-            match port.read(serial_buf.as_mut_slice()) {
-                Ok(t) if t > 0 => {
-                    let pedaco = String::from_utf8_lossy(&serial_buf[..t]);
-                    string_acumulada.push_str(&pedaco);
+while is_reading.load(Ordering::Relaxed) {
+    match port.read(serial_buf.as_mut_slice()) {
+        Ok(t) if t > 0 => {
+            // Filtra apenas ASCII imprimível + \r\n — descarta lixo binário do bootloader
+            let pedaco: String = serial_buf[..t]
+                .iter()
+                .filter(|&&b| b == b'\n' || b == b'\r' || (b >= 0x20 && b < 0x7F))
+                .map(|&b| b as char)
+                .collect();
 
-                    if string_acumulada.len() > 4000 {
-                        string_acumulada.clear();
-                    }
+            string_acumulada.push_str(&pedaco);
 
-                    while let Some(pos) = string_acumulada.find('\n') {
-                        let frase = string_acumulada[..pos].trim_end().to_string();
-                        string_acumulada = string_acumulada[pos + 1..].to_string();
-                        let _ = window.emit("serial-message", frase);
-                        std::thread::sleep(Duration::from_millis(20));
-                    }
-                }
-                _ => {
-                    std::thread::sleep(Duration::from_millis(10));
+            // Se cresceu muito SEM newline → é lixo do boot, descarta
+            if string_acumulada.len() > 300 && !string_acumulada.contains('\n') {
+                string_acumulada.clear();
+            } else if string_acumulada.len() > 4000 {
+                string_acumulada.clear();
+            }
+
+            while let Some(pos) = string_acumulada.find('\n') {
+                let frase = string_acumulada[..pos].trim_end().to_string();
+                string_acumulada = string_acumulada[pos + 1..].to_string();
+                if !frase.is_empty() { // não emite linhas vazias
+                    let _ = window.emit("serial-message", frase);
+                    std::thread::sleep(Duration::from_millis(20));
                 }
             }
         }
+        _ => {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
     });
 
     Ok("Monitor iniciado".to_string())
