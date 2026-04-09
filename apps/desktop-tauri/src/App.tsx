@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { LoginScreen } from './screens/LoginScreen';
-import { IdeScreen } from './screens/IdeScreen';
-import { TeacherDashboard } from "./screens/TeacherDashboard";
-import { StudentDashboard } from "./screens/StudentDashboard";
+import { IdeScreen, LoginScreen,TeacherDashboard,StudentDashboard } from '@bloquin/core-ide';
 import './App.css';
 
 // Quem é o utilizador
