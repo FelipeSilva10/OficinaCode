@@ -1,8 +1,0 @@
-{
-  "name": "bloquin-workspace",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
-}

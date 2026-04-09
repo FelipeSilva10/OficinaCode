@@ -1,0 +1,53 @@
+.
+├── apps
+│   ├── desktop-tauri
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── package-lock.json
+│   │   ├── src
+│   │   │   ├── App.tsx
+│   │   │   ├── main.tsx
+│   │   │   ├── services
+│   │   │   └── vite-env.d.ts
+│   │   ├── src-tauri
+│   │   │   ├── build.rs
+│   │   │   ├── capabilities
+│   │   │   ├── Cargo.lock
+│   │   │   ├── Cargo.toml
+│   │   │   ├── gen
+│   │   │   ├── icons
+│   │   │   ├── resources
+│   │   │   ├── src
+│   │   │   ├── target
+│   │   │   └── tauri.conf.json
+│   │   ├── start-bloquin.sh
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.node.json
+│   │   └── vite.config.ts
+│   └── web
+├── arquitetura.txt
+├── package.json
+├── package-lock.json
+├── packages
+│   ├── auth
+│   ├── compiler-client
+│   ├── core-ide
+│   │   ├── package.json
+│   │   └── src
+│   │       ├── App.css
+│   │       ├── assets
+│   │       ├── blockly
+│   │       ├── components
+│   │       ├── index.ts
+│   │       ├── lib
+│   │       └── screens
+│   ├── types
+│   └── ui
+├── public
+├── README.md
+├── server
+│   └── compiler-server
+├── tsconfig.base.json
+└── turbo.json
+
+28 directories, 23 files

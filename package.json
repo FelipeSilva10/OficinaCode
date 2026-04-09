@@ -1,0 +1,19 @@
+{
+  "name": "bloquin-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "server/*"
+  ],
+  "devDependencies": {
+    "turbo": "latest",
+    "typescript": "^5.2.2"
+  }
+}
