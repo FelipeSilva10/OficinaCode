@@ -152,6 +152,9 @@ export function initGenerators() {
     return `  ${func}(0);\n`;
   };
   cppGenerator.forBlock['l298n_velocidade_por_pitch_roll'] = (b: Blockly.Block) => `  _bloquin_aplicarControle((float)(${cppGenerator.valueToCode(b, 'PITCH', 99) || '0.0f'}), (float)(${cppGenerator.valueToCode(b, 'ROLL', 99) || '0.0f'}), 10.0f, 8.0f);\n`;
+  // Parar robô — zera os dois motores imediatamente
+  cppGenerator.forBlock['l298n_parar'] = (_b: Blockly.Block) => `  _bloquin_motorE(0);\n  _bloquin_motorD(0);\n`;
+
   cppGenerator.forBlock['util_map_float'] = (b: Blockly.Block) => [`_bloquin_mapFloat((float)(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'}), ${b.getFieldValue('DE_MIN')}.0f, ${b.getFieldValue('DE_MAX')}.0f, ${b.getFieldValue('PARA_MIN')}.0f, ${b.getFieldValue('PARA_MAX')}.0f)`, 0];
   cppGenerator.forBlock['util_fabsf'] = (b: Blockly.Block) => [`fabsf((float)(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'}))`, 0];
 }
@@ -259,15 +262,18 @@ export const generateCode = (ws: Blockly.WorkspaceSvg): string => {
       '#include <Wire.h>\n' +
       '#include <MPU6050.h>\n\n' +
       'MPU6050 _mpu;\n\n' +
+      // Pitch: inclinação frente/trás — fórmula desacoplada (eixos independentes)
+      // Roll:  inclinação lateral     — atan2(ay, az)
       'float _bloquin_lerPitch() {\n' +
       '  int16_t ax, ay, az, gx, gy, gz;\n' +
       '  _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\n' +
-      '  return atan2f((float)ay, (float)az) * 180.0f / PI;\n' +
+      '  float fax = (float)ax, fay = (float)ay, faz = (float)az;\n' +
+      '  return atan2f(-fax, sqrtf(fay*fay + faz*faz)) * 180.0f / PI;\n' +
       '}\n' +
       'float _bloquin_lerRoll() {\n' +
       '  int16_t ax, ay, az, gx, gy, gz;\n' +
       '  _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\n' +
-      '  return atan2f((float)ax, (float)az) * 180.0f / PI;\n' +
+      '  return atan2f((float)ay, (float)az) * 180.0f / PI;\n' +
       '}\n\n';
   }
 

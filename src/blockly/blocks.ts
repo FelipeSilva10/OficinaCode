@@ -154,6 +154,16 @@ export function initBlocks() {
     { type: 'l298n_mover_motor', colour: 120, message0: 'Girar motor %1 para %2 com força %3', args0: [{ type: 'field_dropdown', name: 'MOTOR', options: [['Esquerdo', 'E'], ['Direito', 'D']] }, { type: 'field_dropdown', name: 'DIRECAO', options: [['Frente', 'FRENTE'], ['Trás', 'TRAS'], ['Parar', 'PARAR']] }, { type: 'input_value', name: 'FORCA', check: 'Number' }], inputsInline: true, previousStatement: null, nextStatement: null },
     { type: 'l298n_velocidade_por_pitch_roll', colour: 120, message0: '🚗 Mover por inclinação (Frente/Trás %1 Esq/Dir %2)', args0: [{ type: 'input_value', name: 'PITCH', check: 'Number' }, { type: 'input_value', name: 'ROLL', check: 'Number' }], inputsInline: true, previousStatement: null, nextStatement: null },
   ];
-
+  Blockly.Blocks['l298n_parar'] = {
+    init(this: Blockly.Block) {
+      this.appendDummyInput()
+        .appendField('🛑 Parar Robô');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour(120);
+      this.setTooltip('Para os dois motores do robô imediatamente.');
+      this.setHelpUrl('');
+    },
+  };
   Blockly.defineBlocksWithJsonArray(customBlocks);
 }

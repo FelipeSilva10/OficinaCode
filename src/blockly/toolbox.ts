@@ -136,6 +136,7 @@ export const toolboxConfig = {
       contents: [
         { kind: 'block', type: 'l298n_configurar_simples' },
         { kind: 'block', type: 'l298n_mover_robo', inputs: { FORCA: { block: { type: 'numero_fixo', fields: { VALOR: 200 } } } } },
+        { kind: 'block', type: 'l298n_parar' },
         { kind: 'block', type: 'l298n_mover_motor', inputs: { FORCA: { block: { type: 'numero_fixo', fields: { VALOR: 200 } } } } },
         {
           kind: 'block', type: 'l298n_velocidade_por_pitch_roll',
@@ -214,6 +215,7 @@ export const BLOCK_NAMES: Record<string, string> = {
   mpu_ler_roll: 'Ler Inclinação Lateral',
   l298n_configurar_simples: 'Configurar Motores do Robô',
   l298n_mover_robo: 'Mover Robô (Controlo Duplo)',
+  l298n_parar: 'Parar Robô',
   l298n_mover_motor: 'Girar Motor Individual',
   l298n_velocidade_por_pitch_roll: 'Mover por Inclinação (Avançado)',
 };
