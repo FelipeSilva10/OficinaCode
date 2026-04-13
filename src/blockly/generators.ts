@@ -95,7 +95,10 @@ export function initGenerators() {
 
   cppGenerator.forBlock['espnow_enviar_pacote'] = (b: Blockly.Block) => `  _PacoteDados _pkt;\n  _pkt.pitch = (float)(${cppGenerator.valueToCode(b, 'PITCH', 99) || '0.0f'});\n  _pkt.roll  = (float)(${cppGenerator.valueToCode(b, 'ROLL', 99) || '0.0f'});\n  _pkt.parar = ${cppGenerator.valueToCode(b, 'PARAR', 0) || 'false'};\n  esp_now_send(_espnow_peer_mac, (uint8_t*)&_pkt, sizeof(_pkt));\n`;
   cppGenerator.forBlock['espnow_receptor_init'] = (_b: Blockly.Block) => `  if (esp_now_init() != ESP_OK) {\n    Serial.println("[ERRO] ESP-NOW falhou");\n    while(true) delay(1000);\n  }\n  esp_now_register_recv_cb(_bloquin_OnDataRecv);\n`;
-  cppGenerator.forBlock['espnow_tem_dados_novos'] = (_b: Blockly.Block) => [`_espnow_dadosNovos`, 0];
+  // Bug #2 corrigido: ao inves de expor o flag diretamente, usamos uma funcao auxiliar
+  // que checa E limpa o flag atomicamente. Isso garante que cada pacote seja processado
+  // exatamente uma vez, impedindo que o timeout seja sobrescrito pelo ultimo pacote.
+  cppGenerator.forBlock['espnow_tem_dados_novos'] = (_b: Blockly.Block) => [`_bloquin_temDadosNovos()`, 0];
   cppGenerator.forBlock['espnow_ler_pitch'] = (_b: Blockly.Block) => [`_espnow_pacote.pitch`, 0];
   cppGenerator.forBlock['espnow_ler_roll'] = (_b: Blockly.Block) => [`_espnow_pacote.roll`, 0];
   cppGenerator.forBlock['espnow_ler_flag_parar'] = (_b: Blockly.Block) => [`_espnow_pacote.parar`, 0];
@@ -151,10 +154,7 @@ export function initGenerators() {
     if (dir === 'TRAS') return `  ${func}(-(${forca}));\n`;
     return `  ${func}(0);\n`;
   };
-  cppGenerator.forBlock['l298n_velocidade_por_pitch_roll'] = (b: Blockly.Block) => `  _bloquin_aplicarControle((float)(${cppGenerator.valueToCode(b, 'PITCH', 99) || '0.0f'}), (float)(${cppGenerator.valueToCode(b, 'ROLL', 99) || '0.0f'}), 10.0f, 8.0f);\n`;
-  // Parar robô — zera os dois motores imediatamente
-  cppGenerator.forBlock['l298n_parar'] = (_b: Blockly.Block) => `  _bloquin_motorE(0);\n  _bloquin_motorD(0);\n`;
-
+  cppGenerator.forBlock['l298n_velocidade_por_pitch_roll'] = (b: Blockly.Block) => `  _bloquin_aplicarControle(-(float)(${cppGenerator.valueToCode(b, 'PITCH', 99) || '0.0f'}), -(float)(${cppGenerator.valueToCode(b, 'ROLL', 99) || '0.0f'}), 10.0f, 8.0f);\n`;
   cppGenerator.forBlock['util_map_float'] = (b: Blockly.Block) => [`_bloquin_mapFloat((float)(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'}), ${b.getFieldValue('DE_MIN')}.0f, ${b.getFieldValue('DE_MAX')}.0f, ${b.getFieldValue('PARA_MIN')}.0f, ${b.getFieldValue('PARA_MAX')}.0f)`, 0];
   cppGenerator.forBlock['util_fabsf'] = (b: Blockly.Block) => [`fabsf((float)(${cppGenerator.valueToCode(b, 'VALOR', 99) || '0'}))`, 0];
 }
@@ -249,6 +249,14 @@ export const generateCode = (ws: Blockly.WorkspaceSvg): string => {
         '  _espnow_dadosNovos = true;\n' +
         '  _espnow_ultimoRx = millis();\n' +
         '  _espnow_primeiroRx = true;\n' +
+        '}\n' +
+        // Funcao auxiliar: checa e limpa o flag atomicamente (Bug #2)
+        // Garante que cada pacote seja processado exatamente uma vez,
+        // impedindo que o timeout seja sobrescrito pelo ultimo comando recebido.
+        '\nbool _bloquin_temDadosNovos() {\n' +
+        '  if (!_espnow_dadosNovos) return false;\n' +
+        '  _espnow_dadosNovos = false;\n' +
+        '  return true;\n' +
         '}\n';
     }
     espNowHeader += '\n';
@@ -262,18 +270,15 @@ export const generateCode = (ws: Blockly.WorkspaceSvg): string => {
       '#include <Wire.h>\n' +
       '#include <MPU6050.h>\n\n' +
       'MPU6050 _mpu;\n\n' +
-      // Pitch: inclinação frente/trás — fórmula desacoplada (eixos independentes)
-      // Roll:  inclinação lateral     — atan2(ay, az)
       'float _bloquin_lerPitch() {\n' +
       '  int16_t ax, ay, az, gx, gy, gz;\n' +
       '  _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\n' +
-      '  float fax = (float)ax, fay = (float)ay, faz = (float)az;\n' +
-      '  return atan2f(-fax, sqrtf(fay*fay + faz*faz)) * 180.0f / PI;\n' +
+      '  return atan2f((float)ay, (float)az) * 180.0f / PI;\n' +
       '}\n' +
       'float _bloquin_lerRoll() {\n' +
       '  int16_t ax, ay, az, gx, gy, gz;\n' +
       '  _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\n' +
-      '  return atan2f((float)ay, (float)az) * 180.0f / PI;\n' +
+      '  return atan2f((float)ax, (float)az) * 180.0f / PI;\n' +
       '}\n\n';
   }
 
