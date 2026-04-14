@@ -78,20 +78,30 @@ export function initGenerators() {
   // ESP-NOW (C3 compatível com C++ Padrão)
   cppGenerator.forBlock['espnow_iniciar_wifi'] = (_b: Blockly.Block) => `  WiFi.mode(WIFI_STA);\n  WiFi.disconnect();\n  delay(100);\n`;
   cppGenerator.forBlock['espnow_mac_serial'] = (_b: Blockly.Block) => `  Serial.print("[INFO] MAC: ");\n  Serial.println(WiFi.macAddress());\n`;
-  cppGenerator.forBlock['espnow_transmissor_init'] = (_b: Blockly.Block) => `  if (esp_now_init() != ESP_OK) {\n    Serial.println("[ERRO] ESP-NOW falhou");\n    while(true) delay(1000);\n  }\n`;
+  // espnow_transmissor_init: faz init + registra o peer com o MAC ja guardado por
+  // espnow_adicionar_receptor. Garante que esp_now_add_peer sempre ocorra
+  // DEPOIS de esp_now_init(), independente da ordem dos blocos no editor.
+  cppGenerator.forBlock['espnow_transmissor_init'] = (_b: Blockly.Block) =>
+    `  if (esp_now_init() != ESP_OK) {\n    Serial.println("[ERRO] ESP-NOW falhou");\n    while(true) delay(1000);\n  }\n` +
+    `  {\n` +
+    `    esp_now_peer_info_t _pi = {};\n` +
+    `    memcpy(_pi.peer_addr, _espnow_peer_mac, 6);\n` +
+    `    _pi.channel = 0;\n` +
+    `    _pi.encrypt = false;\n` +
+    `    _pi.ifidx = WIFI_IF_STA;\n` +
+    `    if (esp_now_add_peer(&_pi) != ESP_OK) {\n      Serial.println("[ERRO] Falha ao adicionar peer");\n      while(true) delay(1000);\n    }\n` +
+    `    Serial.println("[OK] ESP-NOW pronto.");\n` +
+    `  }\n`;
   
 cppGenerator.forBlock['espnow_adicionar_receptor'] = (b: Blockly.Block) => {
     const mac = (b.getFieldValue('MAC') || 'AA:BB:CC:DD:EE:FF');
     const safeMac = mac.replace(/-/g, ':').trim();
     const parts = safeMac.split(':').map((p: string) => `0x${p.toUpperCase()}`);
+    // Apenas guarda o MAC — o esp_now_add_peer é chamado em espnow_transmissor_init,
+    // DEPOIS do esp_now_init(), garantindo a ordem correta independente dos blocos.
     return (
       `  uint8_t _tmp_mac[6] = {${parts.join(', ')}};\n` +
-      `  memcpy(_espnow_peer_mac, _tmp_mac, 6);\n` +
-      `  esp_now_peer_info_t _pi = {};\n` +
-      `  memcpy(_pi.peer_addr, _espnow_peer_mac, 6);\n` +
-      `  _pi.channel = 0;\n  _pi.encrypt = false;\n` +
-      `  _pi.ifidx = WIFI_IF_STA;\n` + // Essencial para placas ESP32 mais recentes
-      `  esp_now_add_peer(&_pi);\n`
+      `  memcpy(_espnow_peer_mac, _tmp_mac, 6);\n`
     );
   };
 
@@ -118,6 +128,11 @@ cppGenerator.forBlock['espnow_adicionar_receptor'] = (b: Blockly.Block) => {
   cppGenerator.forBlock['buzzer_tocar'] = (b: Blockly.Block) => `  tone(${b.getFieldValue('PIN')}, ${b.getFieldValue('FREQ')});\n`;
   cppGenerator.forBlock['buzzer_tocar_tempo'] = (b: Blockly.Block) => `  tone(${b.getFieldValue('PIN')}, ${b.getFieldValue('FREQ')}, ${b.getFieldValue('DUR')});\n`;
   cppGenerator.forBlock['buzzer_parar'] = (b: Blockly.Block) => `  noTone(${b.getFieldValue('PIN')});\n`;
+  cppGenerator.forBlock['buzzer_tocar_musica'] = (b: Blockly.Block) => {
+  const musica = b.getFieldValue('MUSICA');
+  const pin    = b.getFieldValue('PIN');
+  return `  _bloquin_tocarMusica(_bloquin_mel_${musica}, _bloquin_notes_${musica}, _bloquin_tempo_${musica}, ${pin});\n`;
+};
   cppGenerator.forBlock['mpu_iniciar'] = (b: Blockly.Block) =>
   `  Wire.begin(${b.getFieldValue('SDA')}, ${b.getFieldValue('SCL')});\n` +
   `  Wire.beginTransmission(0x68);\n  Wire.write(0x6B);\n  Wire.write(0);\n` +
@@ -356,8 +371,157 @@ if (needsMPU) {
       '  return (x - iMin) * (oMax - oMin) / (iMax - iMin) + oMin;\n' +
       '}\n\n';
   }
+// ── Músicas prontas (Buzzer) ──────────────────────────────────────────────
+const needsMusica   = mainCode.includes('_bloquin_tocarMusica');
+const needsMario    = mainCode.includes('_bloquin_mel_mario');
+const needsParabens = mainCode.includes('_bloquin_mel_parabens');
 
-  const prefix = espNowHeader + mpuHeader + l298nHeader +
-                 servoHeader + helperLer + helperEntre + (needsUltrass ? '\n' : '');
+let musicaHeader = '';
+if (needsMusica) {
+  // Defines de notas (padrão Arduino / Robson Couto)
+  musicaHeader =
+    '#define REST      0\n' +
+    '#define NOTE_B0   31\n#define NOTE_C1   33\n#define NOTE_CS1  35\n' +
+    '#define NOTE_D1   37\n#define NOTE_DS1  39\n#define NOTE_E1   41\n' +
+    '#define NOTE_F1   44\n#define NOTE_FS1  46\n#define NOTE_G1   49\n' +
+    '#define NOTE_GS1  52\n#define NOTE_A1   55\n#define NOTE_AS1  58\n' +
+    '#define NOTE_B1   62\n#define NOTE_C2   65\n#define NOTE_CS2  69\n' +
+    '#define NOTE_D2   73\n#define NOTE_DS2  78\n#define NOTE_E2   82\n' +
+    '#define NOTE_F2   87\n#define NOTE_FS2  93\n#define NOTE_G2   98\n' +
+    '#define NOTE_GS2 104\n#define NOTE_A2  110\n#define NOTE_AS2 117\n' +
+    '#define NOTE_B2  123\n#define NOTE_C3  131\n#define NOTE_CS3 139\n' +
+    '#define NOTE_D3  147\n#define NOTE_DS3 156\n#define NOTE_E3  165\n' +
+    '#define NOTE_F3  175\n#define NOTE_FS3 185\n#define NOTE_G3  196\n' +
+    '#define NOTE_GS3 208\n#define NOTE_A3  220\n#define NOTE_AS3 233\n' +
+    '#define NOTE_B3  247\n#define NOTE_C4  262\n#define NOTE_CS4 277\n' +
+    '#define NOTE_D4  294\n#define NOTE_DS4 311\n#define NOTE_E4  330\n' +
+    '#define NOTE_F4  349\n#define NOTE_FS4 370\n#define NOTE_G4  392\n' +
+    '#define NOTE_GS4 415\n#define NOTE_A4  440\n#define NOTE_AS4 466\n' +
+    '#define NOTE_B4  494\n#define NOTE_C5  523\n#define NOTE_CS5 554\n' +
+    '#define NOTE_D5  587\n#define NOTE_DS5 622\n#define NOTE_E5  659\n' +
+    '#define NOTE_F5  698\n#define NOTE_FS5 740\n#define NOTE_G5  784\n' +
+    '#define NOTE_GS5 831\n#define NOTE_A5  880\n#define NOTE_AS5 932\n' +
+    '#define NOTE_B5  988\n#define NOTE_C6 1047\n#define NOTE_CS6 1109\n' +
+    '#define NOTE_D6 1175\n#define NOTE_DS6 1245\n#define NOTE_E6 1319\n' +
+    '#define NOTE_F6 1397\n#define NOTE_FS6 1480\n#define NOTE_G6 1568\n' +
+    '#define NOTE_GS6 1661\n#define NOTE_A6 1760\n#define NOTE_AS6 1865\n' +
+    '#define NOTE_B6 1976\n#define NOTE_C7 2093\n#define NOTE_CS7 2217\n' +
+    '#define NOTE_D7 2349\n#define NOTE_DS7 2489\n#define NOTE_E7 2637\n' +
+    '#define NOTE_F7 2794\n#define NOTE_FS7 2960\n#define NOTE_G7 3136\n' +
+    '#define NOTE_GS7 3322\n#define NOTE_A7 3520\n#define NOTE_AS7 3729\n' +
+    '#define NOTE_B7 3951\n#define NOTE_C8 4186\n#define NOTE_CS8 4435\n' +
+    '#define NOTE_D8 4699\n#define NOTE_DS8 4978\n\n';
+
+  // Helper de reprodução (bloqueante — igual ao padrão do arduino-songs)
+  musicaHeader +=
+    'void _bloquin_tocarMusica(const int* mel, int notes, int tempo, int pin) {\n' +
+    '  int wholenote = (60000 * 4) / tempo;\n' +
+    '  for (int i = 0; i < notes * 2; i += 2) {\n' +
+    '    int divider = mel[i + 1];\n' +
+    '    int dur = (divider > 0)\n' +
+    '      ? wholenote / divider\n' +
+    '      : (int)((wholenote / abs(divider)) * 1.5f);\n' +
+    '    if (mel[i] != REST) tone(pin, mel[i], (int)(dur * 0.9f));\n' +
+    '    delay(dur);\n' +
+    '    noTone(pin);\n' +
+    '  }\n' +
+    '}\n\n';
+
+  if (needsMario) {
+    musicaHeader +=
+      '// Melodia: Super Mario Bros (Koji Kondo) — arr. Robson Couto 2019\n' +
+      'const int _bloquin_mel_mario[] = {\n' +
+      '  NOTE_E5,8, NOTE_E5,8, REST,8, NOTE_E5,8, REST,8, NOTE_C5,8, NOTE_E5,8,\n' +
+      '  NOTE_G5,4, REST,4, NOTE_G4,8, REST,4,\n' +
+      '  NOTE_C5,-4, NOTE_G4,8, REST,4, NOTE_E4,-4,\n' +
+      '  NOTE_A4,4, NOTE_B4,4, NOTE_AS4,8, NOTE_A4,4,\n' +
+      '  NOTE_G4,-8, NOTE_E5,-8, NOTE_G5,-8, NOTE_A5,4, NOTE_F5,8, NOTE_G5,8,\n' +
+      '  REST,8, NOTE_E5,4, NOTE_C5,8, NOTE_D5,8, NOTE_B4,-4,\n' +
+      '  NOTE_C5,-4, NOTE_G4,8, REST,4, NOTE_E4,-4,\n' +
+      '  NOTE_A4,4, NOTE_B4,4, NOTE_AS4,8, NOTE_A4,4,\n' +
+      '  NOTE_G4,-8, NOTE_E5,-8, NOTE_G5,-8, NOTE_A5,4, NOTE_F5,8, NOTE_G5,8,\n' +
+      '  REST,8, NOTE_E5,4, NOTE_C5,8, NOTE_D5,8, NOTE_B4,-4,\n' +
+      '  REST,4, NOTE_G5,8, NOTE_FS5,8, NOTE_F5,8, NOTE_DS5,4, NOTE_E5,8,\n' +
+      '  REST,8, NOTE_GS4,8, NOTE_A4,8, NOTE_C4,8, REST,8, NOTE_A4,8, NOTE_C5,8, NOTE_D5,8,\n' +
+      '  REST,4, NOTE_DS5,4, REST,8, NOTE_D5,-4,\n' +
+      '  NOTE_C5,2, REST,2,\n' +
+      '  REST,4, NOTE_G5,8, NOTE_FS5,8, NOTE_F5,8, NOTE_DS5,4, NOTE_E5,8,\n' +
+      '  REST,8, NOTE_GS4,8, NOTE_A4,8, NOTE_C4,8, REST,8, NOTE_A4,8, NOTE_C5,8, NOTE_D5,8,\n' +
+      '  REST,4, NOTE_DS5,4, REST,8, NOTE_D5,-4,\n' +
+      '  NOTE_C5,2, REST,2,\n' +
+      '  NOTE_C5,8, NOTE_C5,4, NOTE_C5,8, REST,8, NOTE_C5,8, NOTE_D5,4,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_A4,8, NOTE_G4,2,\n' +
+      '  NOTE_C5,8, NOTE_C5,4, NOTE_C5,8, REST,8, NOTE_C5,8, NOTE_D5,8, NOTE_E5,8,\n' +
+      '  REST,1,\n' +
+      '  NOTE_C5,8, NOTE_C5,4, NOTE_C5,8, REST,8, NOTE_C5,8, NOTE_D5,4,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_A4,8, NOTE_G4,2,\n' +
+      '  NOTE_E5,8, NOTE_E5,8, REST,8, NOTE_E5,8, REST,8, NOTE_C5,8, NOTE_E5,4,\n' +
+      '  NOTE_G5,4, REST,4, NOTE_G4,4, REST,4,\n' +
+      '  NOTE_C5,-4, NOTE_G4,8, REST,4, NOTE_E4,-4,\n' +
+      '  NOTE_A4,4, NOTE_B4,4, NOTE_AS4,8, NOTE_A4,4,\n' +
+      '  NOTE_G4,-8, NOTE_E5,-8, NOTE_G5,-8, NOTE_A5,4, NOTE_F5,8, NOTE_G5,8,\n' +
+      '  REST,8, NOTE_E5,4, NOTE_C5,8, NOTE_D5,8, NOTE_B4,-4,\n' +
+      '  NOTE_C5,-4, NOTE_G4,8, REST,4, NOTE_E4,-4,\n' +
+      '  NOTE_A4,4, NOTE_B4,4, NOTE_AS4,8, NOTE_A4,4,\n' +
+      '  NOTE_G4,-8, NOTE_E5,-8, NOTE_G5,-8, NOTE_A5,4, NOTE_F5,8, NOTE_G5,8,\n' +
+      '  REST,8, NOTE_E5,4, NOTE_C5,8, NOTE_D5,8, NOTE_B4,-4,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_G4,8, REST,4, NOTE_GS4,4,\n' +
+      '  NOTE_A4,8, NOTE_F5,4, NOTE_F5,8, NOTE_A4,2,\n' +
+      '  NOTE_D5,-8, NOTE_A5,-8, NOTE_A5,-8, NOTE_A5,-8, NOTE_G5,-8, NOTE_F5,-8,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_A4,8, NOTE_G4,2,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_G4,8, REST,4, NOTE_GS4,4,\n' +
+      '  NOTE_A4,8, NOTE_F5,4, NOTE_F5,8, NOTE_A4,2,\n' +
+      '  NOTE_B4,8, NOTE_F5,4, NOTE_F5,8, NOTE_F5,-8, NOTE_E5,-8, NOTE_D5,-8,\n' +
+      '  NOTE_C5,8, NOTE_E4,4, NOTE_E4,8, NOTE_C4,2,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_G4,8, REST,4, NOTE_GS4,4,\n' +
+      '  NOTE_A4,8, NOTE_F5,4, NOTE_F5,8, NOTE_A4,2,\n' +
+      '  NOTE_D5,-8, NOTE_A5,-8, NOTE_A5,-8, NOTE_A5,-8, NOTE_G5,-8, NOTE_F5,-8,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_A4,8, NOTE_G4,2,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_G4,8, REST,4, NOTE_GS4,4,\n' +
+      '  NOTE_A4,8, NOTE_F5,4, NOTE_F5,8, NOTE_A4,2,\n' +
+      '  NOTE_B4,8, NOTE_F5,4, NOTE_F5,8, NOTE_F5,-8, NOTE_E5,-8, NOTE_D5,-8,\n' +
+      '  NOTE_C5,8, NOTE_E4,4, NOTE_E4,8, NOTE_C4,2,\n' +
+      '  NOTE_C5,8, NOTE_C5,4, NOTE_C5,8, REST,8, NOTE_C5,8, NOTE_D5,8, NOTE_E5,8,\n' +
+      '  REST,1,\n' +
+      '  NOTE_C5,8, NOTE_C5,4, NOTE_C5,8, REST,8, NOTE_C5,8, NOTE_D5,4,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_A4,8, NOTE_G4,2,\n' +
+      '  NOTE_E5,8, NOTE_E5,8, REST,8, NOTE_E5,8, REST,8, NOTE_C5,8, NOTE_E5,4,\n' +
+      '  NOTE_G5,4, REST,4, NOTE_G4,4, REST,4,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_G4,8, REST,4, NOTE_GS4,4,\n' +
+      '  NOTE_A4,8, NOTE_F5,4, NOTE_F5,8, NOTE_A4,2,\n' +
+      '  NOTE_D5,-8, NOTE_A5,-8, NOTE_A5,-8, NOTE_A5,-8, NOTE_G5,-8, NOTE_F5,-8,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_A4,8, NOTE_G4,2,\n' +
+      '  NOTE_E5,8, NOTE_C5,4, NOTE_G4,8, REST,4, NOTE_GS4,4,\n' +
+      '  NOTE_A4,8, NOTE_F5,4, NOTE_F5,8, NOTE_A4,2,\n' +
+      '  NOTE_B4,8, NOTE_F5,4, NOTE_F5,8, NOTE_F5,-8, NOTE_E5,-8, NOTE_D5,-8,\n' +
+      '  NOTE_C5,8, NOTE_E4,4, NOTE_E4,8, NOTE_C4,2,\n' +
+      '  NOTE_C5,-4, NOTE_G4,-4, NOTE_E4,4,\n' +
+      '  NOTE_A4,-8, NOTE_B4,-8, NOTE_A4,-8, NOTE_GS4,-8, NOTE_AS4,-8, NOTE_GS4,-8,\n' +
+      '  NOTE_G4,8, NOTE_D4,8, NOTE_E4,-2,\n' +
+      '};\n' +
+      'const int _bloquin_notes_mario = sizeof(_bloquin_mel_mario) / sizeof(_bloquin_mel_mario[0]) / 2;\n' +
+      'const int _bloquin_tempo_mario = 200;\n\n';
+  }
+
+  if (needsParabens) {
+    musicaHeader +=
+      '// Melodia: Parabéns a Você — arr. Robson Couto 2019\n' +
+      'const int _bloquin_mel_parabens[] = {\n' +
+      '  NOTE_C4,4, NOTE_C4,8,\n' +
+      '  NOTE_D4,-4, NOTE_C4,-4, NOTE_F4,-4,\n' +
+      '  NOTE_E4,-2, NOTE_C4,4, NOTE_C4,8,\n' +
+      '  NOTE_D4,-4, NOTE_C4,-4, NOTE_G4,-4,\n' +
+      '  NOTE_F4,-2, NOTE_C4,4, NOTE_C4,8,\n' +
+      '  NOTE_C5,-4, NOTE_A4,-4, NOTE_F4,-4,\n' +
+      '  NOTE_E4,-4, NOTE_D4,-4, NOTE_AS4,4, NOTE_AS4,8,\n' +
+      '  NOTE_A4,-4, NOTE_F4,-4, NOTE_G4,-4,\n' +
+      '  NOTE_F4,-2,\n' +
+      '};\n' +
+      'const int _bloquin_notes_parabens = sizeof(_bloquin_mel_parabens) / sizeof(_bloquin_mel_parabens[0]) / 2;\n' +
+      'const int _bloquin_tempo_parabens = 140;\n\n';
+  }
+}
+
+const prefix = musicaHeader + espNowHeader + mpuHeader + l298nHeader + servoHeader + helperLer + helperEntre + (needsUltrass ? '\n' : '');
   return prefix + mainCode;
 };

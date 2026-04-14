@@ -88,6 +88,7 @@ export const toolboxConfig = {
         { kind: 'block', type: 'buzzer_tocar' },
         { kind: 'block', type: 'buzzer_tocar_tempo' },
         { kind: 'block', type: 'buzzer_parar' },
+        { kind: 'block', type: 'buzzer_tocar_musica' },
       ],
     },
     {
@@ -196,6 +197,7 @@ export const BLOCK_NAMES: Record<string, string> = {
   buzzer_tocar: 'Tocar Som',
   buzzer_tocar_tempo: 'Tocar Som por Tempo',
   buzzer_parar: 'Parar Som',
+  buzzer_tocar_musica: 'Tocar Música Pronta',
   escrever_serial: 'O Robô Diz (texto)',
   escrever_serial_valor: 'O Robô Diz (valor)',
   espnow_iniciar_wifi: 'Preparar Antena Wi-Fi',

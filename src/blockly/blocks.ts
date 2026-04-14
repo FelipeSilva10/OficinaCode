@@ -126,6 +126,14 @@ export function initBlocks() {
 
     // ── BUZZER
     { type: 'buzzer_tocar', colour: 75, message0: '🔊 Tocar som: pino %1 frequência %2 Hz', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }, { type: 'field_number', name: 'FREQ', value: 440, min: 31, max: 65535 }], previousStatement: null, nextStatement: null },
+    { type: 'buzzer_tocar_musica', colour: 75, message0: '🎵 Tocar música: pino %1  %2', args0: [
+    { type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins },
+    { type: 'field_dropdown', name: 'MUSICA', options: [['🍄 Super Mario Bros', 'mario'],['🎂 Parabéns a Você', 'parabens'],
+    ]},
+  ],
+  previousStatement: null, nextStatement: null,
+  tooltip: 'Toca uma melodia completa no buzzer. O programa fica parado até a música terminar.',
+},
     { type: 'buzzer_tocar_tempo', colour: 75, message0: '🔊 Tocar som: pino %1 frequência %2 Hz por %3 ms', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }, { type: 'field_number', name: 'FREQ', value: 440, min: 31 }, { type: 'field_number', name: 'DUR', value: 500, min: 1 }], previousStatement: null, nextStatement: null },
     { type: 'buzzer_parar', colour: 75, message0: '🔇 Parar som no pino %1', args0: [{ type: 'field_dropdown', name: 'PIN', options: () => currentBoardPins }], previousStatement: null, nextStatement: null },
 
