@@ -30,6 +30,7 @@ jobs:
         run: |
           # Versão fixada — altere aqui conscientemente ao atualizar.
           # Deve ser a mesma retornada por `arduino-cli version` no seu ambiente dev.
+          # URL: github.com/arduino/arduino-cli/releases
           $ARDUINO_CLI_VERSION = "1.4.1"
 
           New-Item -ItemType Directory -Force -Path src-tauri/resources/
@@ -37,7 +38,7 @@ jobs:
             Remove-Item -Force src-tauri/resources/arduino-cli.exe
           }
           Invoke-WebRequest `
-            -Uri "https://downloads.arduino.cc/arduino-cli/arduino-cli_v${ARDUINO_CLI_VERSION}_Windows_64bit.zip" `
+            -Uri "https://github.com/arduino/arduino-cli/releases/download/v${ARDUINO_CLI_VERSION}/arduino-cli_${ARDUINO_CLI_VERSION}_Windows_64bit.zip" `
             -OutFile arduino-cli.zip
           Expand-Archive arduino-cli.zip -DestinationPath src-tauri/resources/ -Force
           Remove-Item arduino-cli.zip
