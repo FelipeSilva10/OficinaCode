@@ -121,26 +121,40 @@ fn find_or_download_cli() -> Result<String, String> {
     }
 }
 
+// ─── VERSÕES FIXADAS ────────────────────────────────────────────────────────
+// Ao atualizar um core, mude a versão aqui e bumpe a build.
+// Isso garante que TODOS os alunos compilem com o mesmo toolchain,
+// independente de quando instalaram o Bloquin.
+// ────────────────────────────────────────────────────────────────────────────
 fn ensure_core_installed(cli_path: &str, placa: &str) -> Result<String, String> {
-    let (core, fqbn) = match placa {
-        "uno"   => ("arduino:avr", "arduino:avr:uno"),
-        "nano"  => ("arduino:avr", "arduino:avr:nano"),
-        "esp32" => ("esp32:esp32", "esp32:esp32:esp32"),
-        _       => ("arduino:avr", "arduino:avr:uno"),
+    let (core, fqbn, version) = match placa {
+        "uno"   => ("arduino:avr", "arduino:avr:uno",   "1.8.7"),
+        "nano"  => ("arduino:avr", "arduino:avr:nano",  "1.8.7"),
+        "esp32" => ("esp32:esp32", "esp32:esp32:esp32", "3.3.7"),
+        _       => ("arduino:avr", "arduino:avr:uno",   "1.8.7"),
     };
 
-    println!(">>> [CORE] Verificando pacote '{}'...", core);
+    // Formato "core@versão" aceito pelo arduino-cli para instalar versão exata
+    let core_versioned = format!("{}@{}", core, version);
+
+    println!(">>> [CORE] Verificando pacote '{}' na versão {}...", core, version);
+
     let list_output = Command::new(cli_path)
         .hide_window()
-        .arg("core")
-        .arg("list")
+        .args(["core", "list"])
         .output()
         .map_err(|e| format!("Erro ao listar cores: {}", e))?;
 
     let list_str = String::from_utf8_lossy(&list_output.stdout);
 
-    if !list_str.contains(core) {
-        println!(">>> [CORE] Pacote '{}' não encontrado. Instalando...", core);
+    // Verifica se a versão EXATA está instalada — evita usar versão diferente
+    // que o aluno possa ter de outra fonte (ex: Arduino IDE).
+    let versao_correta_instalada = list_str
+        .lines()
+        .any(|line| line.starts_with(core) && line.contains(version));
+
+    if !versao_correta_instalada {
+        println!(">>> [CORE] Versão correta não encontrada. Instalando {}...", core_versioned);
 
         if core == "esp32:esp32" {
             let _ = Command::new(cli_path)
@@ -173,18 +187,18 @@ fn ensure_core_installed(cli_path: &str, placa: &str) -> Result<String, String> 
 
         let install = Command::new(cli_path)
             .hide_window()
-            .args(["core", "install", core])
+            .args(["core", "install", &core_versioned]) // versão fixada
             .output()
             .map_err(|e| format!("Erro ao instalar core: {}", e))?;
 
         if !install.status.success() {
             let err = String::from_utf8_lossy(&install.stderr);
-            return Err(format!("Erro fatal ao instalar pacote {}:\n{}", core, err));
+            return Err(format!("Erro fatal ao instalar pacote {}:\n{}", core_versioned, err));
         }
 
-        println!(">>> [CORE] Core '{}' instalado com sucesso!", core);
+        println!(">>> [CORE] Core '{}' instalado com sucesso!", core_versioned);
     } else {
-        println!(">>> [CORE] Pacote '{}' já instalado.", core);
+        println!(">>> [CORE] Versão correta '{}' já instalada.", core_versioned);
     }
 
     Ok(fqbn.to_string())
@@ -286,39 +300,39 @@ fn start_serial(
         let mut serial_buf: Vec<u8> = vec![0; 1000];
         let mut string_acumulada = String::new();
 
-while is_reading.load(Ordering::Relaxed) {
-    match port.read(serial_buf.as_mut_slice()) {
-        Ok(t) if t > 0 => {
-            // Filtra apenas ASCII imprimível + \r\n — descarta lixo binário do bootloader
-            let pedaco: String = serial_buf[..t]
-                .iter()
-                .filter(|&&b| b == b'\n' || b == b'\r' || (b >= 0x20 && b < 0x7F))
-                .map(|&b| b as char)
-                .collect();
+        while is_reading.load(Ordering::Relaxed) {
+            match port.read(serial_buf.as_mut_slice()) {
+                Ok(t) if t > 0 => {
+                    // Filtra apenas ASCII imprimível + \r\n — descarta lixo binário do bootloader
+                    let pedaco: String = serial_buf[..t]
+                        .iter()
+                        .filter(|&&b| b == b'\n' || b == b'\r' || (b >= 0x20 && b < 0x7F))
+                        .map(|&b| b as char)
+                        .collect();
 
-            string_acumulada.push_str(&pedaco);
+                    string_acumulada.push_str(&pedaco);
 
-            // Se cresceu muito SEM newline → é lixo do boot, descarta
-            if string_acumulada.len() > 300 && !string_acumulada.contains('\n') {
-                string_acumulada.clear();
-            } else if string_acumulada.len() > 4000 {
-                string_acumulada.clear();
-            }
+                    // Se cresceu muito SEM newline → é lixo do boot, descarta
+                    if string_acumulada.len() > 300 && !string_acumulada.contains('\n') {
+                        string_acumulada.clear();
+                    } else if string_acumulada.len() > 4000 {
+                        string_acumulada.clear();
+                    }
 
-            while let Some(pos) = string_acumulada.find('\n') {
-                let frase = string_acumulada[..pos].trim_end().to_string();
-                string_acumulada = string_acumulada[pos + 1..].to_string();
-                if !frase.is_empty() { // não emite linhas vazias
-                    let _ = window.emit("serial-message", frase);
-                    std::thread::sleep(Duration::from_millis(20));
+                    while let Some(pos) = string_acumulada.find('\n') {
+                        let frase = string_acumulada[..pos].trim_end().to_string();
+                        string_acumulada = string_acumulada[pos + 1..].to_string();
+                        if !frase.is_empty() {
+                            let _ = window.emit("serial-message", frase);
+                            std::thread::sleep(Duration::from_millis(20));
+                        }
+                    }
+                }
+                _ => {
+                    std::thread::sleep(Duration::from_millis(10));
                 }
             }
         }
-        _ => {
-            std::thread::sleep(Duration::from_millis(10));
-        }
-    }
-}
     });
 
     Ok("Monitor iniciado".to_string())
@@ -354,19 +368,16 @@ async fn open_admin_panel(
 ) -> Result<String, String> {
     use tauri::Manager;
 
-    // Se a janela já existe, apenas traz para frente
     if let Some(window) = app.get_webview_window("admin-panel") {
         window.set_focus().map_err(|e| format!("Erro ao focar a janela: {}", e))?;
         return Ok("ok".to_string());
     }
 
-    // Serializa os tokens como strings JSON (aspas + escape automático)
     let at_json = serde_json::to_string(&access_token)
         .map_err(|_| "Erro ao serializar access_token".to_string())?;
     let rt_json = serde_json::to_string(&refresh_token)
         .map_err(|_| "Erro ao serializar refresh_token".to_string())?;
 
-    // Script executado ANTES de qualquer JS da página do SAG.
     let init_script = format!(
         "(function(){{Object.defineProperty(window,'__bloquin_auth',{{value:{{access_token:{},refresh_token:{}}},writable:false,configurable:false,enumerable:false}});}})();",
         at_json,
@@ -384,8 +395,8 @@ async fn open_admin_panel(
         .inner_size(1280.0, 800.0)
         .min_inner_size(900.0, 600.0)
         .center()
-        .focused(true)                      
-        .initialization_script(&init_script) 
+        .focused(true)
+        .initialization_script(&init_script)
         .build()
         .map_err(|e| format!("Erro ao abrir janela: {}", e))?;
 
