@@ -277,7 +277,7 @@ const { error } = await ProjectService.saveProject(
         
         {/* BLOCO ESQUERDO */}
         <div className="topbar-left">
-          <img src={logoSimples} alt="bloquin" style={{ height: '34px' }} />
+          <img src={logoSimples} draggable={false} alt="bloquin" style={{ height: '34px' }} />
           {projectTitle && (
             <div className="project-title-badge">
               {readOnly && <span className="read-only-dot" />}
@@ -295,17 +295,17 @@ const { error } = await ProjectService.saveProject(
               <select value={port} onChange={(e) => setPort(e.target.value)}>
                 {availablePorts.length === 0 ? <option value="">Selecione uma placa</option> : availablePorts.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
-              <button onClick={fetchPorts} className="btn-icon" title="Atualizar porta"> ↻ </button>
+              <button onClick={fetchPorts} className="btn-icon" title="Atualizar porta"> 🔄 </button>
             </div>
             <div className="control-divider" />
             {!readOnly && (
               <>
                 <button onClick={() => handleUploadCode()} className="btn-action btn-send" disabled={isUploadingRef.current || boardLoadState !== 'ready'}>Enviar</button>
-                <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>{isSerialOpen ? '🛑 Parar' : 'Chat'}</button>
+                <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>{isSerialOpen ? 'Parar chat' : 'Chat'}</button>
               </>
             )}
             {readOnly && (
-              <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>{isSerialOpen ? '🛑 Parar' : '💬 Monitorar'}</button>
+              <button className={`btn-action ${isSerialOpen ? 'btn-chat-active' : 'btn-chat'}`} onClick={handleToggleSerial}>{isSerialOpen ? 'Parar' : 'Monitorar'}</button>
             )}
           </div>
         </div>

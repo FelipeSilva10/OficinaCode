@@ -23,8 +23,7 @@ export function BoardSelectionModal({ onSelect }: BoardSelectionModalProps) {
         <div>
           <h2 className="board-modal-title">Qual placa vamos usar?</h2>
           <p className="board-modal-subtitle">
-            Escolha antes de começar. Os pinos disponíveis vão mudar dependendo da placa.
-            <br /><strong>Essa escolha não pode ser alterada depois de salvar.</strong>
+            <br /><strong>Essa escolha não pode ser alterada.</strong>
           </p>
         </div>
         <div className="board-list">
