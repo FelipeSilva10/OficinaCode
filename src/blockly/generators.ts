@@ -255,7 +255,7 @@ export const generateCode = (ws: Blockly.WorkspaceSvg): string => {
       'unsigned long _espnow_ultimoRx = 0;\n' +
       'bool _espnow_primeiroRx = false;\n';
 
-    if (needsEspNowTx) {
+    if (mainCode.includes('_espnow_peer_mac')) {
       espNowHeader += 'uint8_t _espnow_peer_mac[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};\n';
     }
 
